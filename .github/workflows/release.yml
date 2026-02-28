@@ -5,6 +5,9 @@ on:
     tags:
       - "*"  # 监听所有标签推送
 
+permissions:
+  contents: write  # 允许写入内容，用于创建发布版本
+
 jobs:
   release:
     runs-on: ubuntu-latest

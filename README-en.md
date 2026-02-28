@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This is a powerful Obsidian calendar plugin that supports displaying lunar calendar, holidays, work day adjustments, solar terms, and other information. It supports displaying and creating notes associated with the calendar for existing notes updates/creations.
+This is a Obsidian calendar plugin that supports displaying lunar calendar, holidays, work day adjustments, solar terms, and other information. It supports displaying and creating notes associated with the calendar for existing notes updates/creations.
 
 ## Features
 
@@ -47,3 +47,9 @@ This is a powerful Obsidian calendar plugin that supports displaying lunar calen
 ### Note Management
 - **Auto Refresh**：When creating, modifying, renaming, or deleting notes, the calendar will automatically refresh to display the latest note status.
 - **Notes List**：Displays all notes for the currently selected date, click on the note name to open the note directly.
+
+## Dependencies
+### 1. lunar Component
+lunar is a tool for Gregorian calendar (solar calendar), lunar calendar (lunar calendar, traditional Chinese calendar), Buddhist calendar and Taoist calendar without third-party dependencies.
+GitHub URL: https://github.com/6tail/lunar-javascript
+Documentation URL: https://6tail.cn/calendar/api.html
