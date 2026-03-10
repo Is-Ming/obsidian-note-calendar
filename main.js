@@ -1,7 +1,7 @@
 const { Plugin, ItemView, Setting, PluginSettingTab, Modal, Notice } = require('obsidian');
-// 获取当前文件的绝对路径
-const lunarPath = this.app.vault.adapter.basePath + "/.obsidian/plugins/" + this.manifest.id + "/lunar.js";
-const { Lunar, Solar, HolidayUtil} = require(lunarPath);
+
+// 全局变量，用于存储lunar.js的导出对象
+let Lunar, Solar, HolidayUtil;
 
 const VIEW_TYPE_CALENDAR = 'note-calendar-view';
 
@@ -297,6 +297,13 @@ getWeekNumber(date) {
 // 插件主体
 module.exports = class NoteCalendarPlugin extends Plugin {
   async onload() {
+    // 加载lunar.js
+    const lunarPath = this.app.vault.adapter.basePath + "/.obsidian/plugins/" + this.manifest.id + "/lunar.js";
+    const lunarModule = require(lunarPath);
+    Lunar = lunarModule.Lunar;
+    Solar = lunarModule.Solar;
+    HolidayUtil = lunarModule.HolidayUtil;
+
     // 加载设置
     await this.loadSettings();
 
