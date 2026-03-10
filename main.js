@@ -1,6 +1,6 @@
 const { Plugin, ItemView, Setting, PluginSettingTab, Modal, Notice } = require('obsidian');
 // 获取当前文件的绝对路径
-const lunarPath = this.app.vault.adapter.basePath + "/.obsidian/plugins/note-calendar/lunar.js";
+const lunarPath = this.app.vault.adapter.basePath + "/.obsidian/plugins/" + this.manifest.id + "/lunar.js";
 const { Lunar, Solar, HolidayUtil} = require(lunarPath);
 
 const VIEW_TYPE_CALENDAR = 'note-calendar-view';

@@ -22,7 +22,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          # 获取仓库名作为插件ID
+          REPO_NAME=$(basename "$GITHUB_REPOSITORY")
+          # 创建临时目录
+          mkdir -p "$REPO_NAME"
+          # 复制文件到临时目录
+          cp main.js manifest.json styles.css lunar.js "$REPO_NAME/"
+          # 创建zip包
+          zip -r "${REPO_NAME}.zip" "$REPO_NAME"
+          # 创建发布版本，包含原始文件和zip包
           gh release create "$tag" \
             --title="$tag" \
             --draft \
-            main.js manifest.json styles.css lunar.js
+            main.js manifest.json styles.css lunar.js "${REPO_NAME}.zip"
