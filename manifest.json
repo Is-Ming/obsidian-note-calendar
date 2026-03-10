@@ -1,10 +1,10 @@
 {
-  "id": "obsidian-note-calendar",
+  "id": "note-calendar",
   "name": "Note Calendar",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.5.8",
-  "description": "一个Obsidian日历插件，支持显示农历，节日，调休，节气等信息，支持现有笔记的更新/新增显示和创建日历关联的笔记。",
-	"author": "小铭同学",
-	"authorUrl": "https://github.com/Is-Ming/obsidian-note-calendar",
+  "description": "A calendar plugin that displays lunar dates, holidays, workday adjustments, solar terms, and allows updating/creating notes associated with calendar entries.",
+  "author": "Ming",
+  "authorUrl": "https://github.com/Is-Ming",
   "isDesktopOnly": true
 }
