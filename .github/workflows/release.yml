@@ -16,22 +16,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # 安装jq（用于解析manifest.json）
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       # 创建发布版本
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          # 获取仓库名作为插件ID
-          REPO_NAME=$(basename "$GITHUB_REPOSITORY")
+          # 从manifest.json获取插件ID
+          PLUGIN_ID=$(jq -r '.id' manifest.json)
           # 创建临时目录
-          mkdir -p "$REPO_NAME"
+          mkdir -p "$PLUGIN_ID"
           # 复制文件到临时目录
-          cp main.js manifest.json styles.css lunar.js "$REPO_NAME/"
+          cp main.js manifest.json styles.css lunar.js "$PLUGIN_ID/"
           # 创建zip包
-          zip -r "${REPO_NAME}.zip" "$REPO_NAME"
+          zip -r "${PLUGIN_ID}.zip" "$PLUGIN_ID"
           # 创建发布版本，包含原始文件和zip包
           gh release create "$tag" \
             --title="$tag" \
             --draft \
-            main.js manifest.json styles.css lunar.js "${REPO_NAME}.zip"
+            main.js manifest.json styles.css lunar.js "${PLUGIN_ID}.zip"
