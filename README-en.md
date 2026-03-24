@@ -66,7 +66,7 @@ This is a Obsidian calendar plugin that supports displaying lunar calendar, holi
 ## Installation Guide
 
 ### Method 1: Manual Installation
-1. **Download Plugin**：Download the latest version of the plugin zip file note-calendar.zip from the [releases page](https://github.com/yourusername/obsidian-note-calendar/releases).
+1. **Download Plugin**：Download the latest version of the plugin zip file note-calendar.zip from the [releases page](https://github.com/Is-Ming/obsidian-note-calendar/releases).
 
 2. **Install Plugin**：Unzip the plugin zip file note-calendar.zip, the unzipped folder name is note-calendar, put it into Obsidian's plugin directory.
 
@@ -83,9 +83,9 @@ This is a Obsidian calendar plugin that supports displaying lunar calendar, holi
 4. **Enable Plugin**：Open settings in Obsidian, find the plugin list, and enable the "Note Calendar" plugin.
 
 ## Feedback
-- **Issue Feedback**：If you encounter any problems during use, please submit an issue report in [GitHub Issues](https://github.com/yourusername/obsidian-note-calendar/issues).
+- **Issue Feedback**：If you encounter any problems during use, please submit an issue report in [GitHub Issues](https://github.com/Is-Ming/obsidian-note-calendar/issues).
 
-- **Feature Suggestions**：If you have any feature suggestions or improvement ideas, please submit suggestions in [GitHub Issues](https://github.com/yourusername/obsidian-note-calendar/issues).
+- **Feature Suggestions**：If you have any feature suggestions or improvement ideas, please submit suggestions in [GitHub Issues](https://github.com/Is-Ming/obsidian-note-calendar/issues).
 
 ## Dependencies
 ### 1. lunar Component

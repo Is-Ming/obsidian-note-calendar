@@ -68,7 +68,7 @@
 ## 安装指南
 
 ### 方式一：手动安装
-1. **下载插件**：从[发布页面](https://github.com/yourusername/obsidian-note-calendar/releases)下载最新版本的插件压缩包note-calendar.zip。
+1. **下载插件**：从[发布页面](https://github.com/Is-Ming/obsidian-note-calendar/releases)下载最新版本的插件压缩包note-calendar.zip。
 
 2. **安装插件**：将插件压缩包note-calendar.zip解压,解压后的文件夹名称为note-calendar,将其放入Obsidian的插件目录中。
 
@@ -86,9 +86,9 @@
 
 
 ## 反馈
-- **问题反馈**：如果在使用过程中遇到问题，请在[GitHub Issues](https://github.com/yourusername/obsidian-note-calendar/issues)中提交问题报告。
+- **问题反馈**：如果在使用过程中遇到问题，请在[GitHub Issues](https://github.com/Is-Ming/obsidian-note-calendar/issues)中提交问题报告。
 
-- **功能建议**：如果有任何功能建议或改进意见，请在[GitHub Issues](https://github.com/yourusername/obsidian-note-calendar/issues)中提交建议。
+- **功能建议**：如果有任何功能建议或改进意见，请在[GitHub Issues](https://github.com/Is-Ming/obsidian-note-calendar/issues)中提交建议。
 
 
 ## 依赖组件
