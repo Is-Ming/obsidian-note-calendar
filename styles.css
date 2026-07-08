@@ -4,11 +4,11 @@
 :root {
   --calendar-primary: #5d4ed8;
   --calendar-primary-hover: #4b3dc0;
-  --calendar-bg: #1e1e1e;
-  --calendar-border: #3d3d3d;
-  --calendar-text: #e0e0e0;
-  --calendar-text-muted: #999999;
-  --calendar-hover: #2d2d2d;
+  --calendar-bg: var(--background-secondary);
+  --calendar-border: var(--background-modifier-border);
+  --calendar-text: var(--text-normal);
+  --calendar-text-muted: var(--text-muted);
+  --calendar-hover: var(--background-modifier-hover);
   --calendar-today-bg: var(--calendar-primary);
   --calendar-today-text: #ffffff;
   --calendar-weekend-color: #840606;
