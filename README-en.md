@@ -22,6 +22,7 @@ This is a Obsidian calendar plugin that supports displaying lunar calendar, holi
 
 ### Basic Settings
 
+- **Theme Mode**：Select the calendar background theme mode (Follow Obsidian / Dark / Light), with Obsidian default color values for dark and light modes
 - **Week Start Day**：Select whether the first day of the week is Sunday or Monday
 - **Weekend Color**：Set the color for Saturday and Sunday display
 - **Theme Color**：Set the display color for today, selected state, and holidays
