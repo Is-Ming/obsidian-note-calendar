@@ -29,6 +29,24 @@
   font-size: var(--calendar-font-size);
 }
 
+/* 深色主题 - 使用 Obsidian 默认深色主题色值 */
+.note-calendar-view.calendar-theme-dark {
+  --calendar-bg: #2d2d2d;
+  --calendar-border: rgba(255, 255, 255, 0.1);
+  --calendar-text: #dcddde;
+  --calendar-text-muted: #888888;
+  --calendar-hover: rgba(255, 255, 255, 0.05);
+}
+
+/* 浅色主题 - 使用 Obsidian 默认浅色主题色值 */
+.note-calendar-view.calendar-theme-light {
+  --calendar-bg: #f2f2f2;
+  --calendar-border: rgba(0, 0, 0, 0.1);
+  --calendar-text: #222222;
+  --calendar-text-muted: #888888;
+  --calendar-hover: rgba(0, 0, 0, 0.05);
+}
+
 /* 日历头部 */
 .calendar-header {
   display: flex;

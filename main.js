@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
   startOfWeek: 0, // 0=周日, 1=周一
   weekendColor: '#840606', // 周六周日的颜色，默认为 RGB(132, 6, 6)
   themeColor: '#5d4ed8', // 主题颜色，默认为紫色
+  themeMode: 'auto', // 主题模式：auto=跟随Obsidian, dark=深色, light=浅色
   showLunarDate: true, // 是否显示农历日期
   showSolarFestivals: true, // 是否显示阳历节日
   showLunarFestivals: true, // 是否显示农历节日
@@ -41,6 +42,7 @@ class CalendarModel {
     this.dateFormat = settings.dateFormat || 'YYYY-MM-DD'; // 日期格式
     this.fontFamily = settings.fontFamily || 'default'; // 字体
     this.fontSize = settings.fontSize || 14; // 字号
+    this.themeMode = settings.themeMode || 'auto'; // 主题模式：auto/dark/light
     // 初始化时默认选中今天
     const today = new Date();
     this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -469,6 +471,7 @@ module.exports = class NoteCalendarPlugin extends Plugin {
         view.model.dateFormat = this.settings.dateFormat;
         view.model.fontFamily = this.settings.fontFamily;
         view.model.fontSize = this.settings.fontSize;
+        view.model.themeMode = this.settings.themeMode;
         view.render();
       }
     });
@@ -1599,6 +1602,16 @@ class CalendarView extends ItemView {
     this.contentEl.style.setProperty('--calendar-primary', this.model.themeColor);
     this.contentEl.style.setProperty('--calendar-font-family', this.getFontFamilyValue());
     this.contentEl.style.setProperty('--calendar-font-size', this.model.fontSize + 'px');
+
+    // 根据主题模式切换 CSS class
+    const themeMode = this.model.themeMode || 'auto';
+    this.contentEl.classList.remove('calendar-theme-dark', 'calendar-theme-light');
+    if (themeMode === 'dark') {
+      this.contentEl.classList.add('calendar-theme-dark');
+    } else if (themeMode === 'light') {
+      this.contentEl.classList.add('calendar-theme-light');
+    }
+    // auto 模式不添加任何 class，使用 :root 中定义的默认变量跟随 Obsidian
   }
 
   /**
@@ -1730,6 +1743,21 @@ class CalendarSettingTab extends PluginSettingTab {
 
     // 添加说明文本
     containerEl.createEl('h2', { text: 'Note Calendar 设置' });
+
+    // 主题模式设置（第一位）
+    new Setting(containerEl)
+      .setName('主题模式')
+      .setDesc('选择日历背景主题模式。跟随Obsidian将自动适配深色/浅色主题，深色和浅色使用Obsidian默认色值')
+      .addDropdown(dropdown => dropdown
+        .addOption('auto', '跟随Obsidian')
+        .addOption('dark', '深色')
+        .addOption('light', '浅色')
+        .setValue(this.plugin.settings.themeMode || 'auto')
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({
+            themeMode: value
+          });
+        }));
 
     // 一周起始日设置
     new Setting(containerEl)
