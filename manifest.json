@@ -1,7 +1,7 @@
 {
   "id": "note-calendar",
   "name": "Note Calendar",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "minAppVersion": "1.5.8",
   "description": "A calendar plugin that displays lunar dates, holidays, workday adjustments, solar terms, and allows updating/creating notes associated with calendar entries.",
   "author": "Ming",
