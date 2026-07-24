@@ -16,10 +16,19 @@ const DEFAULT_SETTINGS = {
   showLunarFestivals: true, // 是否显示农历节日
   showHolidayMarker: true, // 是否显示调休
   showJieQi: true, // 是否显示节气
-  noteFolderPath: '', // 笔记文件夹路径，默认为空（根目录）
-  dateFormat: 'YYYY-MM-DD', // 日期格式，默认为YYYY-MM-DD
+  noteFolderPath: '', // 笔记扫描目录，留空=扫描整个仓库，设置了则只扫描该目录下的 .md 文件
+  dateFormat: 'YYYY-MM-DD', // （已废弃，仅用于迁移到 dailyTitleFormat）
   fontFamily: 'default', // 字体：默认、微软雅黑、宋体、黑体、Arial、Helvetica、Verdana、Tahoma、Segoe UI
-  fontSize: 14 // 字号：10-20px，默认14px
+  fontSize: 14, // 字号：10-20px，默认14px
+  // 各类型笔记的标题格式和默认路径（v0.3.4 新增）
+  dailyTitleFormat: 'YYYY-MM-DD',
+  dailyFolderPath: '',
+  weeklyTitleFormat: 'YYYY-{week}周',
+  weeklyFolderPath: '',
+  quarterlyTitleFormat: 'YYYY年-{quarter}季度',
+  quarterlyFolderPath: '',
+  yearlyTitleFormat: 'YYYY',
+  yearlyFolderPath: ''
 };
 
 /**
@@ -38,11 +47,19 @@ class CalendarModel {
     this.showLunarFestivals = settings.showLunarFestivals !== undefined ? settings.showLunarFestivals : true; // 是否显示农历节日
     this.showHolidayMarker = settings.showHolidayMarker !== undefined ? settings.showHolidayMarker : true; // 是否显示调休
     this.showJieQi = settings.showJieQi !== undefined ? settings.showJieQi : true; // 是否显示节气
-    this.noteFolderPath = settings.noteFolderPath || ''; // 笔记文件夹路径
-    this.dateFormat = settings.dateFormat || 'YYYY-MM-DD'; // 日期格式
+    this.noteFolderPath = settings.noteFolderPath || ''; // 笔记扫描目录
     this.fontFamily = settings.fontFamily || 'default'; // 字体
     this.fontSize = settings.fontSize || 14; // 字号
     this.themeMode = settings.themeMode || 'auto'; // 主题模式：auto/dark/light
+    // 各类型笔记的标题格式和默认路径（v0.3.4）
+    this.dailyTitleFormat = settings.dailyTitleFormat || 'YYYY-MM-DD';
+    this.dailyFolderPath = settings.dailyFolderPath || '';
+    this.weeklyTitleFormat = settings.weeklyTitleFormat || 'YYYY-{week}周';
+    this.weeklyFolderPath = settings.weeklyFolderPath || '';
+    this.quarterlyTitleFormat = settings.quarterlyTitleFormat || 'YYYY年-{quarter}季度';
+    this.quarterlyFolderPath = settings.quarterlyFolderPath || '';
+    this.yearlyTitleFormat = settings.yearlyTitleFormat || 'YYYY';
+    this.yearlyFolderPath = settings.yearlyFolderPath || '';
     // 初始化时默认选中今天
     const today = new Date();
     this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -437,7 +454,12 @@ module.exports = class NoteCalendarPlugin extends Plugin {
    * 加载设置
    */
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const data = await this.loadData();
+    // 迁移旧版 dateFormat 到 dailyTitleFormat
+    if (data && data.dateFormat && !data.dailyTitleFormat) {
+      data.dailyTitleFormat = data.dateFormat;
+    }
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
   }
 
   /**
@@ -468,10 +490,17 @@ module.exports = class NoteCalendarPlugin extends Plugin {
         view.model.showJieQi = this.settings.showJieQi;
         view.model.showHolidayMarker = this.settings.showHolidayMarker;
         view.model.noteFolderPath = this.settings.noteFolderPath;
-        view.model.dateFormat = this.settings.dateFormat;
         view.model.fontFamily = this.settings.fontFamily;
         view.model.fontSize = this.settings.fontSize;
         view.model.themeMode = this.settings.themeMode;
+        view.model.dailyTitleFormat = this.settings.dailyTitleFormat;
+        view.model.dailyFolderPath = this.settings.dailyFolderPath;
+        view.model.weeklyTitleFormat = this.settings.weeklyTitleFormat;
+        view.model.weeklyFolderPath = this.settings.weeklyFolderPath;
+        view.model.quarterlyTitleFormat = this.settings.quarterlyTitleFormat;
+        view.model.quarterlyFolderPath = this.settings.quarterlyFolderPath;
+        view.model.yearlyTitleFormat = this.settings.yearlyTitleFormat;
+        view.model.yearlyFolderPath = this.settings.yearlyFolderPath;
         view.render();
       }
     });
@@ -1204,43 +1233,8 @@ class CalendarView extends ItemView {
     const titleContainer = document.createElement('div');
     titleContainer.className = 'calendar-notes-title-container';
     
-    // 创建按钮组
-    const createBtnGroup = document.createElement('div');
-    createBtnGroup.className = 'calendar-create-btn-group';
-    
-    // 日记创建按钮
-    const createBtn = document.createElement('button');
-    createBtn.className = 'calendar-create-note-btn';
-    createBtn.textContent = '+';
-    createBtn.title = '创建日记';
-    createBtn.onclick = () => this.showCreateNoteDialog('daily');
-    createBtnGroup.appendChild(createBtn);
-    
-    // 周周记创建按钮
-    const createWeeklyBtn = document.createElement('button');
-    createWeeklyBtn.className = 'calendar-create-note-btn';
-    createWeeklyBtn.textContent = '周';
-    createWeeklyBtn.title = '创建周周记';
-    createWeeklyBtn.onclick = () => this.showCreateNoteDialog('weekly');
-    createBtnGroup.appendChild(createWeeklyBtn);
-    
-    // 季度笔记创建按钮
-    const createQuarterlyBtn = document.createElement('button');
-    createQuarterlyBtn.className = 'calendar-create-note-btn';
-    createQuarterlyBtn.textContent = '季';
-    createQuarterlyBtn.title = '创建季度笔记';
-    createQuarterlyBtn.onclick = () => this.showCreateNoteDialog('quarterly');
-    createBtnGroup.appendChild(createQuarterlyBtn);
-    
-    // 年度笔记创建按钮
-    const createYearlyBtn = document.createElement('button');
-    createYearlyBtn.className = 'calendar-create-note-btn';
-    createYearlyBtn.textContent = '年';
-    createYearlyBtn.title = '创建年度笔记';
-    createYearlyBtn.onclick = () => this.showCreateNoteDialog('yearly');
-    createBtnGroup.appendChild(createYearlyBtn);
-    
-    titleContainer.appendChild(createBtnGroup);
+    // 使用抽提的按钮创建方法
+    titleContainer.appendChild(this.createNoteButtonsGroup());
     
     // 创建日期标题
     const titleEl = document.createElement('div');
@@ -1280,43 +1274,8 @@ class CalendarView extends ItemView {
     const titleContainer = document.createElement('div');
     titleContainer.className = 'calendar-notes-title-container';
     
-    // 创建按钮组
-    const createBtnGroup = document.createElement('div');
-    createBtnGroup.className = 'calendar-create-btn-group';
-    
-    // 日记创建按钮
-    const createBtn = document.createElement('button');
-    createBtn.className = 'calendar-create-note-btn';
-    createBtn.textContent = '+';
-    createBtn.title = '创建日记';
-    createBtn.onclick = () => this.showCreateNoteDialog('daily');
-    createBtnGroup.appendChild(createBtn);
-    
-    // 周周记创建按钮
-    const createWeeklyBtn = document.createElement('button');
-    createWeeklyBtn.className = 'calendar-create-note-btn';
-    createWeeklyBtn.textContent = '周';
-    createWeeklyBtn.title = '创建周周记';
-    createWeeklyBtn.onclick = () => this.showCreateNoteDialog('weekly');
-    createBtnGroup.appendChild(createWeeklyBtn);
-    
-    // 季度笔记创建按钮
-    const createQuarterlyBtn = document.createElement('button');
-    createQuarterlyBtn.className = 'calendar-create-note-btn';
-    createQuarterlyBtn.textContent = '季';
-    createQuarterlyBtn.title = '创建季度笔记';
-    createQuarterlyBtn.onclick = () => this.showCreateNoteDialog('quarterly');
-    createBtnGroup.appendChild(createQuarterlyBtn);
-    
-    // 年度笔记创建按钮
-    const createYearlyBtn = document.createElement('button');
-    createYearlyBtn.className = 'calendar-create-note-btn';
-    createYearlyBtn.textContent = '年';
-    createYearlyBtn.title = '创建年度笔记';
-    createYearlyBtn.onclick = () => this.showCreateNoteDialog('yearly');
-    createBtnGroup.appendChild(createYearlyBtn);
-    
-    titleContainer.appendChild(createBtnGroup);
+    // 使用抽提的按钮创建方法
+    titleContainer.appendChild(this.createNoteButtonsGroup());
     
     // 创建日期标题
     const titleEl = document.createElement('div');
@@ -1392,41 +1351,80 @@ class CalendarView extends ItemView {
   }
 
   /**
+   * 根据笔记类型和日期生成笔记标题
+   * @param {string} type - daily / weekly / quarterly / yearly
+   * @param {Date} date - 日期对象
+   * @returns {string} 格式化后的标题
+   */
+  generateNoteTitle(type, date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    switch (type) {
+      case 'weekly':
+        return this.model.weeklyTitleFormat
+          .replace('YYYY', year)
+          .replace('{week}', this.getWeekNumber(date));
+      case 'quarterly':
+        return this.model.quarterlyTitleFormat
+          .replace('YYYY', year)
+          .replace('{quarter}', Math.floor(date.getMonth() / 3) + 1);
+      case 'yearly':
+        return this.model.yearlyTitleFormat
+          .replace('YYYY', year);
+      case 'daily':
+      default:
+        return this.model.dailyTitleFormat
+          .replace('YYYY', year)
+          .replace('MM', month)
+          .replace('DD', day);
+    }
+  }
+
+  /**
+   * 创建笔记创建按钮组（公共方法，消除重复代码）
+   */
+  createNoteButtonsGroup() {
+    const group = document.createElement('div');
+    group.className = 'calendar-create-btn-group';
+
+    const buttons = [
+      { text: '+', title: '创建日记', type: 'daily' },
+      { text: '周', title: '创建周周记', type: 'weekly' },
+      { text: '季', title: '创建季度笔记', type: 'quarterly' },
+      { text: '年', title: '创建年度笔记', type: 'yearly' }
+    ];
+
+    buttons.forEach(({ text, title, type }) => {
+      const btn = document.createElement('button');
+      btn.className = 'calendar-create-note-btn';
+      btn.textContent = text;
+      btn.title = title;
+      btn.onclick = () => this.showCreateNoteDialog(type);
+      group.appendChild(btn);
+    });
+
+    return group;
+  }
+
+  /**
    * 显示创建笔记对话框
    */
   showCreateNoteDialog(type = 'daily') {
     const selectedDate = this.model.selectedDate;
     if (!selectedDate) return;
     
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
+    // 使用类型对应的格式生成默认标题
+    const defaultTitle = this.generateNoteTitle(type, selectedDate);
     
-    // 根据笔记类型生成默认标题
-    let defaultTitle;
+    // 获取该类型对应的默认文件夹路径
+    let defaultFolder = '';
     switch (type) {
-      case 'weekly':
-        // 计算当前周数
-        const weekNumber = this.getWeekNumber(selectedDate);
-        defaultTitle = `${year}-${weekNumber}周`;
-        break;
-      case 'quarterly':
-        // 计算当前季度
-        const quarter = Math.floor(selectedDate.getMonth() / 3) + 1;
-        defaultTitle = `${year}年-${quarter}季度`;
-        break;
-      case 'yearly':
-        defaultTitle = `${year}`;
-        break;
-      case 'daily':
-      default:
-        // 根据设置的日期格式生成默认标题
-        const dateFormat = this.model.dateFormat || 'YYYY-MM-DD';
-        defaultTitle = dateFormat
-          .replace('YYYY', year)
-          .replace('MM', month)
-          .replace('DD', day);
-        break;
+      case 'daily': defaultFolder = this.model.dailyFolderPath || ''; break;
+      case 'weekly': defaultFolder = this.model.weeklyFolderPath || ''; break;
+      case 'quarterly': defaultFolder = this.model.quarterlyFolderPath || ''; break;
+      case 'yearly': defaultFolder = this.model.yearlyFolderPath || ''; break;
     }
     
     // 创建对话框
@@ -1472,6 +1470,7 @@ class CalendarView extends ItemView {
     
     const folderInput = document.createElement('input');
     folderInput.type = 'text';
+    folderInput.value = defaultFolder;
     folderInput.placeholder = '例如: notes/日记';
     folderInput.style.padding = '8px';
     folderInput.style.border = '1px solid var(--calendar-border)';
@@ -1551,15 +1550,16 @@ class CalendarView extends ItemView {
         return;
       }
       
-      // 创建文件夹（如果不存在）
+      // 逐级检查并创建不存在的文件夹
       if (folderPath) {
         const folderParts = folderPath.split('/');
         let currentPath = '';
         
         for (const part of folderParts) {
           if (!part) continue;
-          currentPath += part + '/';
+          currentPath = currentPath ? currentPath + '/' + part : part;
           
+          // 不带末尾斜杠查找，避免 getAbstractFileByPath 找不到已存在的文件夹
           const folder = this.app.vault.getAbstractFileByPath(currentPath);
           if (!folder) {
             await this.app.vault.createFolder(currentPath);
@@ -1747,25 +1747,23 @@ class CalendarSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    // 添加说明文本
     containerEl.createEl('h2', { text: 'Note Calendar 设置' });
 
-    // 主题模式设置（第一位）
+    // ========== 外观设置 ==========
+    containerEl.createEl('h3', { text: '外观' });
+
     new Setting(containerEl)
       .setName('主题模式')
-      .setDesc('选择日历背景主题模式。跟随Obsidian将自动适配深色/浅色主题，深色和浅色使用Obsidian默认色值')
+      .setDesc('选择日历背景主题模式。跟随Obsidian将自动适配深色/浅色主题')
       .addDropdown(dropdown => dropdown
         .addOption('auto', '跟随Obsidian')
         .addOption('dark', '深色')
         .addOption('light', '浅色')
         .setValue(this.plugin.settings.themeMode || 'auto')
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            themeMode: value
-          });
+          await this.plugin.updateSettings({ themeMode: value });
         }));
 
-    // 一周起始日设置
     new Setting(containerEl)
       .setName('一周起始日')
       .setDesc('选择日历一周的第一天是周日还是周一')
@@ -1774,36 +1772,27 @@ class CalendarSettingTab extends PluginSettingTab {
         .addOption('1', '周一')
         .setValue(String(this.plugin.settings.startOfWeek))
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            startOfWeek: parseInt(value)
-          });
+          await this.plugin.updateSettings({ startOfWeek: parseInt(value) });
         }));
 
-    // 周末颜色设置
     new Setting(containerEl)
       .setName('周末颜色')
       .setDesc('周六和周日显示的颜色')
       .addColorPicker(colorPicker => colorPicker
         .setValue(this.plugin.settings.weekendColor)
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            weekendColor: value
-          });
+          await this.plugin.updateSettings({ weekendColor: value });
         }));
 
-    // 主题颜色设置
     new Setting(containerEl)
       .setName('主题颜色')
       .setDesc('今天、选中状态和节假日的显示颜色')
       .addColorPicker(colorPicker => colorPicker
         .setValue(this.plugin.settings.themeColor)
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            themeColor: value
-          });
+          await this.plugin.updateSettings({ themeColor: value });
         }));
 
-    // 字体设置
     new Setting(containerEl)
       .setName('字体')
       .setDesc('选择日历使用的字体')
@@ -1819,12 +1808,9 @@ class CalendarSettingTab extends PluginSettingTab {
         .addOption('segoe-ui', 'Segoe UI')
         .setValue(this.plugin.settings.fontFamily)
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            fontFamily: value
-          });
+          await this.plugin.updateSettings({ fontFamily: value });
         }));
 
-    // 字号设置
     new Setting(containerEl)
       .setName('字号')
       .setDesc('设置日历文字大小（10-20px）')
@@ -1833,105 +1819,171 @@ class CalendarSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.fontSize)
         .setDynamicTooltip()
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            fontSize: Math.round(value)
-          });
+          await this.plugin.updateSettings({ fontSize: Math.round(value) });
         }));
-        
+
+    // ========== 显示设置 ==========
+    containerEl.createEl('h3', { text: '显示' });
+
     new Setting(containerEl)
-      .setName('是否显示公历假日')
+      .setName('显示公历假日')
       .setDesc('关闭后不再显示公历假日')
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.showSolarFestivals)
           .onChange(async (value) => {
-            await this.plugin.updateSettings({
-              showSolarFestivals: value
-            });
+            await this.plugin.updateSettings({ showSolarFestivals: value });
           });
       });
-      new Setting(containerEl)
-      .setName('是否显示调休')
+
+    new Setting(containerEl)
+      .setName('显示调休')
       .setDesc('关闭后不再显示调休')
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.showHolidayMarker)
           .onChange(async (value) => {
-            await this.plugin.updateSettings({
-              showHolidayMarker: value
-            });
+            await this.plugin.updateSettings({ showHolidayMarker: value });
           });
       });
-      new Setting(containerEl)
-      .setName('是否显示农历日期')
-      .setDesc('关闭后不再显示农历日期，月份，年份')
+
+    new Setting(containerEl)
+      .setName('显示农历日期')
+      .setDesc('关闭后不再显示农历日期、月份、年份')
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.showLunarDate)
           .onChange(async (value) => {
-            await this.plugin.updateSettings({
-              showLunarDate: value
-            });
+            await this.plugin.updateSettings({ showLunarDate: value });
           });
       });
-          new Setting(containerEl)
-      .setName('是否显示农历假日')
+
+    new Setting(containerEl)
+      .setName('显示农历假日')
       .setDesc('关闭后不再显示农历假日')
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.showLunarFestivals)
           .onChange(async (value) => {
-            await this.plugin.updateSettings({
-              showLunarFestivals: value
-            });
+            await this.plugin.updateSettings({ showLunarFestivals: value });
           });
       });
-          new Setting(containerEl)
-      .setName('是否显示农历节气')
-      .setDesc('关闭后不再显示农历节气')
+
+    new Setting(containerEl)
+      .setName('显示节气')
+      .setDesc('关闭后不再显示节气')
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.settings.showJieQi)
           .onChange(async (value) => {
-            await this.plugin.updateSettings({
-              showJieQi: value
-            });
+            await this.plugin.updateSettings({ showJieQi: value });
           });
       });
 
-    // 笔记文件夹路径设置
+    // ========== 笔记创建设置 ==========
+    containerEl.createEl('h3', { text: '📓 日记设置' });
+
     new Setting(containerEl)
-      .setName('笔记文件夹路径')
-      .setDesc('设置扫描笔记的文件夹路径（留空为根目录）')
+      .setName('标题格式')
+      .setDesc('支持 YYYY（年份）、MM（月份）、DD（日期）')
       .addText(text => text
-        .setPlaceholder('例如: Notes')
+        .setPlaceholder('YYYY-MM-DD')
+        .setValue(this.plugin.settings.dailyTitleFormat)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ dailyTitleFormat: value });
+        }));
+
+    new Setting(containerEl)
+      .setName('默认文件夹路径')
+      .setDesc('创建日记时的默认保存路径（留空为根目录）')
+      .addText(text => text
+        .setPlaceholder('例如: notes/日记')
+        .setValue(this.plugin.settings.dailyFolderPath)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ dailyFolderPath: value });
+        }));
+
+    containerEl.createEl('h3', { text: '📅 周记设置' });
+
+    new Setting(containerEl)
+      .setName('标题格式')
+      .setDesc('支持 YYYY（年份）、{week}（周数），例如：YYYY-{week}周')
+      .addText(text => text
+        .setPlaceholder('YYYY-{week}周')
+        .setValue(this.plugin.settings.weeklyTitleFormat)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ weeklyTitleFormat: value });
+        }));
+
+    new Setting(containerEl)
+      .setName('默认文件夹路径')
+      .setDesc('创建周记时的默认保存路径（留空为根目录）')
+      .addText(text => text
+        .setPlaceholder('例如: notes/周记')
+        .setValue(this.plugin.settings.weeklyFolderPath)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ weeklyFolderPath: value });
+        }));
+
+    containerEl.createEl('h3', { text: '📊 季度笔记设置' });
+
+    new Setting(containerEl)
+      .setName('标题格式')
+      .setDesc('支持 YYYY（年份）、{quarter}（季度），例如：YYYY年-{quarter}季度')
+      .addText(text => text
+        .setPlaceholder('YYYY年-{quarter}季度')
+        .setValue(this.plugin.settings.quarterlyTitleFormat)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ quarterlyTitleFormat: value });
+        }));
+
+    new Setting(containerEl)
+      .setName('默认文件夹路径')
+      .setDesc('创建季度笔记时的默认保存路径（留空为根目录）')
+      .addText(text => text
+        .setPlaceholder('例如: notes/季度')
+        .setValue(this.plugin.settings.quarterlyFolderPath)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ quarterlyFolderPath: value });
+        }));
+
+    containerEl.createEl('h3', { text: '📆 年度笔记设置' });
+
+    new Setting(containerEl)
+      .setName('标题格式')
+      .setDesc('支持 YYYY（年份），例如：YYYY')
+      .addText(text => text
+        .setPlaceholder('YYYY')
+        .setValue(this.plugin.settings.yearlyTitleFormat)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ yearlyTitleFormat: value });
+        }));
+
+    new Setting(containerEl)
+      .setName('默认文件夹路径')
+      .setDesc('创建年度笔记时的默认保存路径（留空为根目录）')
+      .addText(text => text
+        .setPlaceholder('例如: notes/年度')
+        .setValue(this.plugin.settings.yearlyFolderPath)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ yearlyFolderPath: value });
+        }));
+
+    // ========== 笔记扫描 ==========
+    containerEl.createEl('h3', { text: '🔍 笔记扫描' });
+
+    new Setting(containerEl)
+      .setName('扫描目录')
+      .setDesc('设置只扫描该目录下的笔记文件用于日历显示，留空则扫描整个仓库。此设置仅影响哪些笔记会被显示在日历上，与创建笔记时的默认保存路径无关。')
+      .addText(text => text
+        .setPlaceholder('留空扫描全部')
         .setValue(this.plugin.settings.noteFolderPath)
         .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            noteFolderPath: value
-          });
+          await this.plugin.updateSettings({ noteFolderPath: value });
         }));
 
-    // 日期格式设置
     new Setting(containerEl)
-      .setName('日期格式')
-      .setDesc('设置新建笔记的默认日期格式')
-      .addDropdown(dropdown => dropdown
-        .addOption('YYYY-MM-DD', 'YYYY-MM-DD')
-        .addOption('YYYY/MM/DD', 'YYYY/MM/DD')
-        .addOption('DD/MM/YYYY', 'DD/MM/YYYY')
-        .addOption('MM/DD/YYYY', 'MM/DD/YYYY')
-        .setValue(this.plugin.settings.dateFormat || 'YYYY-MM-DD')
-        .onChange(async (value) => {
-          await this.plugin.updateSettings({
-            dateFormat: value
-          });
-        }));
-
-    // 重新扫描笔记按钮
-    new Setting(containerEl)
-      .setName('重新扫描笔记')
-      .setDesc('点击按钮重新扫描所有笔记')
+      .setName('手动扫描')
+      .setDesc('点击按钮立即重新扫描所有笔记')
       .addButton(button => button
         .setButtonText('扫描')
         .onClick(async () => {
           await this.plugin.scanNotes();
         }));
-
   }
 }
