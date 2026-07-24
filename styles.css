@@ -16,17 +16,28 @@
   --calendar-font-size: 14px;
 }
 
-/* 日历容器 */
+/* 日历容器 — flex列布局撑满高度 */
 .note-calendar-view {
   background-color: var(--calendar-bg);
   border: 1px solid var(--calendar-border);
   border-radius: 8px;
   padding: 16px;
   width: 100%;
-  height: auto;
+  height: 100%;
   box-sizing: border-box;
   font-family: var(--calendar-font-family);
   font-size: var(--calendar-font-size);
+  color: var(--calendar-text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 日历顶部容器（头部+网格），固定不滚动 */
+.calendar-calendar-container {
+  flex-shrink: 0;
+  /* 底部阴影作为与笔记列表的明显分隔 */
+  box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.15);
 }
 
 /* 深色主题 - 使用 Obsidian 默认深色主题色值 */
@@ -38,6 +49,11 @@
   --calendar-hover: rgba(255, 255, 255, 0.05);
 }
 
+/* 深色主题下日历与笔记列表的分隔线加深 */
+.note-calendar-view.calendar-theme-dark .calendar-notes-list {
+  border-top-color: rgba(255, 255, 255, 0.25);
+}
+
 /* 浅色主题 - 使用 Obsidian 默认浅色主题色值 */
 .note-calendar-view.calendar-theme-light {
   --calendar-bg: #f2f2f2;
@@ -45,6 +61,11 @@
   --calendar-text: #222222;
   --calendar-text-muted: #888888;
   --calendar-hover: rgba(0, 0, 0, 0.05);
+}
+
+/* 浅色主题下日历与笔记列表的分隔线加深 */
+.note-calendar-view.calendar-theme-light .calendar-notes-list {
+  border-top-color: rgba(0, 0, 0, 0.25);
 }
 
 /* 日历头部 */
@@ -442,11 +463,16 @@
   background-color: #2196f3;
 }
 
-/* 笔记列表容器 */
+/* 笔记列表容器 — flex自适应，内部独立滚动 */
 .calendar-notes-list {
   margin-top: 16px;
-  border-top: 1px solid var(--calendar-border);
-  padding-top: 12px;
+  padding-top: 16px;
+  border-top: 2px solid var(--calendar-border);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* 笔记列表日期标题 */
@@ -497,11 +523,14 @@
   background: var(--calendar-primary-hover);
 }
 
-/* 笔记列表 */
+/* 笔记列表 — 可滚动区域 */
 .calendar-notes-items {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 /* 笔记列表项 */

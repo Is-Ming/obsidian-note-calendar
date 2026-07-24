@@ -859,13 +859,19 @@ class CalendarView extends ItemView {
     this.contentEl.style.setProperty('--calendar-font-family', this.getFontFamilyValue());
     this.contentEl.style.setProperty('--calendar-font-size', this.model.fontSize + 'px');
 
+    // 创建日历顶部容器（头部+网格），固定不滚动
+    const calendarContainer = document.createElement('div');
+    calendarContainer.className = 'calendar-calendar-container';
+
     // 创建头部
     this.header = this.createHeader();
-    this.contentEl.appendChild(this.header);
+    calendarContainer.appendChild(this.header);
 
     // 创建网格
     this.grid = this.createGrid();
-    this.contentEl.appendChild(this.grid);
+    calendarContainer.appendChild(this.grid);
+
+    this.contentEl.appendChild(calendarContainer);
 
     // 创建笔记列表容器
     this.notesList = this.createNotesList();
