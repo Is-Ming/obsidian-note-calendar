@@ -11,7 +11,7 @@
   --calendar-hover: var(--background-modifier-hover);
   --calendar-today-bg: var(--calendar-primary);
   --calendar-today-text: #ffffff;
-  --calendar-weekend-color: #840606;
+  --calendar-weekend-color: #e57373;
   --calendar-font-family: inherit;
   --calendar-font-size: 14px;
 }
@@ -31,6 +31,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* 日历顶部容器（头部+网格），固定不滚动 */
@@ -68,24 +69,34 @@
   border-top-color: rgba(0, 0, 0, 0.25);
 }
 
-/* 日历头部 */
+/* 日历头部 — 两侧按钮 absolute，标题居中不受挤 */
 .calendar-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-bottom: 16px;
   gap: 8px;
-  padding-top: 48px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--calendar-border);
   position: relative;
 }
 
-/* 导航按钮组 */
+/* 导航按钮组 — absolute 脱离普通流，不挤占标题空间 */
 .calendar-nav-group {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.calendar-nav-left {
+  left: 0;
+}
+
+.calendar-nav-right {
+  right: 0;
 }
 
 /* 标题组 */
@@ -155,25 +166,35 @@
 }
 
 .calendar-nav-btn {
-  font-size: var(--calendar-font-size);
-  padding: 2px 4px;
-  min-width: 24px;
+  font-size: calc(var(--calendar-font-size) * 1.1);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.calendar-nav-btn:hover {
+  background-color: var(--calendar-hover) !important;
+  color: var(--calendar-primary) !important;
 }
 
 .calendar-today-btn {
-  padding: 8px 20px !important;
-  font-size: calc(var(--calendar-font-size) * 0.9);
+  padding: 4px 10px !important;
+  font-size: calc(var(--calendar-font-size) * 0.85);
   font-weight: 600;
-  position: absolute;
-  top: 8px;
-  right: 0;
   background: transparent !important;
   color: var(--calendar-primary) !important;
-  border: 2px solid var(--calendar-primary) !important;
-  border-radius: 8px !important;
+  border: 1.5px solid var(--calendar-primary) !important;
+  border-radius: 6px !important;
   box-shadow: none !important;
-  transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
   cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 4px;
   appearance: none !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -249,19 +270,25 @@
   font-size: calc(var(--calendar-font-size) * 1.1);
   font-weight: 550;
   color: var(--calendar-text-muted);
-  padding: 12px 0;
+  padding: 8px 0;
   position: relative;
   grid-column: 1;
   grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 周数单元格 */
 .calendar-week-number {
   text-align: center;
-  padding: 12px 0;
-  font-size: var(--calendar-font-size);
-  color: var(--calendar-text);
+  padding: 0; /* 改用 flex 居中 */
+  font-size: calc(var(--calendar-font-size) * 0.85);
+  color: var(--calendar-text-muted);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 星期标题 */
@@ -270,7 +297,10 @@
   font-size: calc(var(--calendar-font-size) * 1.1);
   font-weight: 550;
   color: var(--calendar-text-muted);
-  padding: 12px 0;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .calendar-weekday.calendar-weekend {
@@ -283,14 +313,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4px 0;
-  border-radius: 4px;
+  padding: 6px 2px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: var(--calendar-font-size);
-  transition: background-color 0.2s, color 0.2s, outline 0.2s;
+  transition: background-color 0.15s, color 0.15s, outline 0.15s;
   color: var(--calendar-text);
   position: relative;
   box-sizing: content-box;
+}
+
+.calendar-day:hover {
+  background-color: var(--calendar-hover);
 }
 
 /* 公历日期文本 */
@@ -339,8 +373,8 @@
 
 /* 调休标示 - "班"（上班）样式 */
 .calendar-holiday-work {
-  color: #ffffff;
-  border-color: #ffffff;
+  color: var(--calendar-text);
+  border-color: var(--calendar-text);
 }
 
 /* 非当前月份的日期 */
@@ -353,7 +387,19 @@
 .calendar-day-today {
   background-color: transparent;
   color: var(--calendar-primary);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.calendar-day-today::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background-color: var(--calendar-primary);
 }
 
 .calendar-day-today:hover:not(.calendar-day-selected) {
@@ -365,18 +411,26 @@
 .calendar-day-selected:not(.calendar-day-today) {
   background-color: transparent;
   outline: 2px solid var(--calendar-primary);
+  outline-offset: -2px;
   font-weight: 600;
+  border-radius: 6px;
 }
 
 .calendar-day-selected:not(.calendar-day-today):hover {
   background-color: var(--calendar-hover);
 }
 
-/* 今天的日期被选中时 */
+/* 今天的日期被选中时 — 隐藏底部横线，outline 已足够标识 */
 .calendar-day-selected.calendar-day-today {
   background-color: transparent;
   outline: 2px solid var(--calendar-primary);
-  font-weight: 600;
+  outline-offset: -2px;
+  font-weight: 700;
+  border-radius: 6px;
+}
+
+.calendar-day-selected.calendar-day-today::after {
+  content: none;
 }
 
 /* 周末日期 */
@@ -384,9 +438,9 @@
   color: var(--calendar-weekend-color);
 }
 
-/* 周末调休上班（有"班"字），显示为白色 */
+/* 周末调休上班（有"班"字），显示为正常文字色 */
 .calendar-day-weekend:not(.calendar-day-today).calendar-day-weekend-work {
-  color: #ffffff;
+  color: var(--calendar-text);
 }
 
 /* 周内放假（有"休"字），显示为红色（周末颜色） */
@@ -496,9 +550,10 @@
 
 /* 创建笔记按钮 */
 .calendar-create-btn-group {
+  position: absolute;
+  left: 0;
   display: flex;
   gap: 4px;
-  margin-right: 8px;
   flex-shrink: 0;
 }
 
@@ -506,21 +561,27 @@
   background: var(--calendar-primary);
   color: #ffffff;
   border: none;
-  border-radius: 4px;
-  width: 24px;
-  height: 24px;
-  font-size: 14px;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s;
+  line-height: 1;
 }
 
 .calendar-create-note-btn:hover {
   background: var(--calendar-primary-hover);
+  transform: scale(1.15);
+}
+
+.calendar-create-note-btn:active {
+  transform: scale(0.95);
 }
 
 /* 笔记列表 — 可滚动区域 */
@@ -537,15 +598,17 @@
 .calendar-note-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 4px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
+  border: 1px solid transparent;
 }
 
 .calendar-note-item:hover {
   background-color: var(--calendar-hover);
+  border-color: var(--calendar-border);
 }
 
 /* 笔记列表项圆点 */
@@ -563,6 +626,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 空状态提示 */
+.calendar-notes-empty {
+  text-align: center;
+  padding: 16px 0;
+  color: var(--calendar-text-muted);
+  font-size: calc(var(--calendar-font-size) * 0.9);
+}
+
+/* 笔记列表滚动条美化 */
+.calendar-notes-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.calendar-notes-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.calendar-notes-items::-webkit-scrollbar-thumb {
+  background: var(--calendar-border);
+  border-radius: 2px;
+}
+
+.calendar-notes-items::-webkit-scrollbar-thumb:hover {
+  background: var(--calendar-text-muted);
 }
 
 

@@ -8,7 +8,7 @@ const VIEW_TYPE_CALENDAR = 'note-calendar-view';
 // 默认设置
 const DEFAULT_SETTINGS = {
   startOfWeek: 0, // 0=周日, 1=周一
-  weekendColor: '#840606', // 周六周日的颜色，默认为 RGB(132, 6, 6)
+  weekendColor: '#e57373', // 周六周日的默认颜色，柔和玫瑰色
   themeColor: '#5d4ed8', // 主题颜色，默认为紫色
   themeMode: 'auto', // 主题模式：auto=跟随Obsidian, dark=深色, light=浅色
   showLunarDate: true, // 是否显示农历日期
@@ -40,7 +40,7 @@ class CalendarModel {
     this.viewYear = this.currentDate.getFullYear();
     this.viewMonth = this.currentDate.getMonth() + 1; // 1-12
     this.startOfWeek = settings.startOfWeek || 0; // 0=周日, 1=周一
-    this.weekendColor = settings.weekendColor || '#999999'; // 周六周日颜色
+    this.weekendColor = settings.weekendColor || '#e57373'; // 周六周日颜色
     this.themeColor = settings.themeColor || '#5d4ed8'; // 主题颜色
     this.showLunarDate = settings.showLunarDate !== undefined ? settings.showLunarDate : true; // 是否显示农历日期
     this.showSolarFestivals = settings.showSolarFestivals !== undefined ? settings.showSolarFestivals : true; // 是否显示阳历节日
@@ -928,7 +928,7 @@ class CalendarView extends ItemView {
     // 上一年按钮
     const prevYearBtn = document.createElement('button');
     prevYearBtn.className = 'calendar-btn calendar-nav-btn';
-    prevYearBtn.textContent = '<<';
+    prevYearBtn.textContent = '‹‹';
     prevYearBtn.onclick = () => {
       this.model.previousYear();
       this.render();
@@ -938,7 +938,7 @@ class CalendarView extends ItemView {
     // 上个月按钮
     const prevMonthBtn = document.createElement('button');
     prevMonthBtn.className = 'calendar-btn calendar-nav-btn';
-    prevMonthBtn.textContent = '<';
+    prevMonthBtn.textContent = '‹';
     prevMonthBtn.onclick = () => {
       this.model.previousMonth();
       this.render();
@@ -962,26 +962,27 @@ class CalendarView extends ItemView {
     
     header.appendChild(titleGroup);
 
-    // 今天按钮（右上角绝对定位）
-    const todayBtn = document.createElement('button');
-    todayBtn.className = 'calendar-btn calendar-today-btn';
-    todayBtn.textContent = '今';
-    todayBtn.onclick = () => {
+    // 今天按钮 — 先创建引用，后面塞入右侧导航组
+    this.todayBtn = document.createElement('button');
+    this.todayBtn.className = 'calendar-btn calendar-today-btn';
+    this.todayBtn.textContent = '今';
+    this.todayBtn.onclick = () => {
       this.model.goToToday();
       this.todayBtn.classList.add('calendar-today-btn-selected');
       this.render();
     };
-    header.appendChild(todayBtn);
-    this.todayBtn = todayBtn;
 
-    // 右侧切换按钮组
+    // 右侧切换按钮组（包含导航按钮和今按钮）
     const rightNavGroup = document.createElement('div');
     rightNavGroup.className = 'calendar-nav-group calendar-nav-right';
+
+    // 今按钮 — 放在右侧导航组最前面
+    rightNavGroup.appendChild(this.todayBtn);
 
     // 下个月按钮
     const nextMonthBtn = document.createElement('button');
     nextMonthBtn.className = 'calendar-btn calendar-nav-btn';
-    nextMonthBtn.textContent = '>';
+    nextMonthBtn.textContent = '›';
     nextMonthBtn.onclick = () => {
       this.model.nextMonth();
       this.render();
@@ -991,7 +992,7 @@ class CalendarView extends ItemView {
     // 下一年按钮
     const nextYearBtn = document.createElement('button');
     nextYearBtn.className = 'calendar-btn calendar-nav-btn';
-    nextYearBtn.textContent = '>>';
+    nextYearBtn.textContent = '››';
     nextYearBtn.onclick = () => {
       this.model.nextYear();
       this.render();
@@ -1778,6 +1779,12 @@ class CalendarSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('周末颜色')
       .setDesc('周六和周日显示的颜色')
+      .addExtraButton(button => button
+        .setIcon('reset')
+        .setTooltip('重置为默认颜色')
+        .onClick(() => {
+          this.showResetConfirm('周末颜色', 'weekendColor', DEFAULT_SETTINGS.weekendColor);
+        }))
       .addColorPicker(colorPicker => colorPicker
         .setValue(this.plugin.settings.weekendColor)
         .onChange(async (value) => {
@@ -1787,6 +1794,12 @@ class CalendarSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('主题颜色')
       .setDesc('今天、选中状态和节假日的显示颜色')
+      .addExtraButton(button => button
+        .setIcon('reset')
+        .setTooltip('重置为默认颜色')
+        .onClick(() => {
+          this.showResetConfirm('主题颜色', 'themeColor', DEFAULT_SETTINGS.themeColor);
+        }))
       .addColorPicker(colorPicker => colorPicker
         .setValue(this.plugin.settings.themeColor)
         .onChange(async (value) => {
@@ -1985,5 +1998,61 @@ class CalendarSettingTab extends PluginSettingTab {
         .onClick(async () => {
           await this.plugin.scanNotes();
         }));
+  }
+
+  /**
+   * 显示重置确认弹窗
+   * @param {string} label 设置项名称，如"周末颜色"
+   * @param {string} key 设置键名
+   * @param {string} defaultValue 默认值
+   */
+  showResetConfirm(label, key, defaultValue) {
+    const modal = new Modal(this.app);
+    modal.titleEl.textContent = `重置${label}`;
+
+    const content = modal.contentEl;
+    content.style.display = 'flex';
+    content.style.flexDirection = 'column';
+    content.style.gap = '16px';
+
+    const desc = document.createElement('p');
+    desc.textContent = `确定要将${label}重置为默认值吗？`;
+    desc.style.margin = '0';
+    content.appendChild(desc);
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '8px';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.padding = '8px 16px';
+    cancelBtn.style.border = '1px solid var(--background-modifier-border)';
+    cancelBtn.style.borderRadius = '4px';
+    cancelBtn.style.background = 'var(--background-secondary)';
+    cancelBtn.style.color = 'var(--text-normal)';
+    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.onclick = () => modal.close();
+    buttonContainer.appendChild(cancelBtn);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '确认重置';
+    confirmBtn.style.padding = '8px 16px';
+    confirmBtn.style.border = 'none';
+    confirmBtn.style.borderRadius = '4px';
+    confirmBtn.style.background = 'var(--calendar-primary)';
+    confirmBtn.style.color = '#ffffff';
+    confirmBtn.style.cursor = 'pointer';
+    confirmBtn.onclick = async () => {
+      await this.plugin.updateSettings({ [key]: defaultValue });
+      this.display();
+      modal.close();
+      new Notice(`${label}已重置为默认`);
+    };
+    buttonContainer.appendChild(confirmBtn);
+
+    content.appendChild(buttonContainer);
+    modal.open();
   }
 }
