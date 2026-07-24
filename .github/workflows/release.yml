@@ -31,11 +31,11 @@ jobs:
           # 创建临时目录
           mkdir -p "$PLUGIN_ID"
           # 复制文件到临时目录
-          cp main.js manifest.json styles.css lunar.js "$PLUGIN_ID/"
+          cp main.js manifest.json styles.css "$PLUGIN_ID/"
           # 创建zip包
           zip -r "${PLUGIN_ID}.zip" "$PLUGIN_ID"
           # 创建发布版本，包含原始文件和zip包
           gh release create "$tag" \
             --title="$tag" \
             --draft \
-            main.js manifest.json styles.css lunar.js "${PLUGIN_ID}.zip"
+            main.js manifest.json styles.css "${PLUGIN_ID}.zip"
