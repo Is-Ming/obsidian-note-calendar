@@ -28,7 +28,9 @@ const DEFAULT_SETTINGS = {
   quarterlyTitleFormat: 'YYYY年-{quarter}季度',
   quarterlyFolderPath: '',
   yearlyTitleFormat: 'YYYY',
-  yearlyFolderPath: ''
+  yearlyFolderPath: '',
+  monthlyTitleFormat: 'YYYY年MM月',
+  monthlyFolderPath: ''
 };
 
 /**
@@ -60,6 +62,8 @@ class CalendarModel {
     this.quarterlyFolderPath = settings.quarterlyFolderPath || '';
     this.yearlyTitleFormat = settings.yearlyTitleFormat || 'YYYY';
     this.yearlyFolderPath = settings.yearlyFolderPath || '';
+    this.monthlyTitleFormat = settings.monthlyTitleFormat || 'YYYY年MM月';
+    this.monthlyFolderPath = settings.monthlyFolderPath || '';
     // 初始化时默认选中今天
     const today = new Date();
     this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -8842,7 +8846,8 @@ module.exports = class NoteCalendarPlugin extends Plugin {
     LunarTime:LunarTime,
     HolidayUtil:HolidayUtil,
     I18n: I18n
-  };
+  };
+
     })();
     Lunar = __lunarExports.Lunar;
     Solar = __lunarExports.Solar;
@@ -9026,6 +9031,8 @@ module.exports = class NoteCalendarPlugin extends Plugin {
         view.model.quarterlyFolderPath = this.settings.quarterlyFolderPath;
         view.model.yearlyTitleFormat = this.settings.yearlyTitleFormat;
         view.model.yearlyFolderPath = this.settings.yearlyFolderPath;
+        view.model.monthlyTitleFormat = this.settings.monthlyTitleFormat;
+        view.model.monthlyFolderPath = this.settings.monthlyFolderPath;
         view.render();
       }
     });
@@ -9892,6 +9899,10 @@ class CalendarView extends ItemView {
         return this.model.weeklyTitleFormat
           .replace('YYYY', year)
           .replace('{week}', this.getWeekNumber(date));
+      case 'monthly':
+        return this.model.monthlyTitleFormat
+          .replace('YYYY', year)
+          .replace('MM', month);
       case 'quarterly':
         return this.model.quarterlyTitleFormat
           .replace('YYYY', year)
@@ -9918,6 +9929,7 @@ class CalendarView extends ItemView {
     const buttons = [
       { text: '+', title: '创建日记', type: 'daily' },
       { text: '周', title: '创建周周记', type: 'weekly' },
+      { text: '月', title: '创建月度笔记', type: 'monthly' },
       { text: '季', title: '创建季度笔记', type: 'quarterly' },
       { text: '年', title: '创建年度笔记', type: 'yearly' }
     ];
@@ -9949,13 +9961,17 @@ class CalendarView extends ItemView {
     switch (type) {
       case 'daily': defaultFolder = this.model.dailyFolderPath || ''; break;
       case 'weekly': defaultFolder = this.model.weeklyFolderPath || ''; break;
+      case 'monthly': defaultFolder = this.model.monthlyFolderPath || ''; break;
       case 'quarterly': defaultFolder = this.model.quarterlyFolderPath || ''; break;
       case 'yearly': defaultFolder = this.model.yearlyFolderPath || ''; break;
     }
     
     // 创建对话框
     const modal = new Modal(this.app);
-    modal.titleEl.textContent = type === 'daily' ? '创建新笔记' : `创建${type === 'weekly' ? '周周记' : type === 'quarterly' ? '季度笔记' : '年度笔记'}`;
+    modal.titleEl.textContent = type === 'daily' ? '创建新笔记' :
+      type === 'weekly' ? '创建周周记' :
+      type === 'monthly' ? '创建月度笔记' :
+      type === 'quarterly' ? '创建季度笔记' : '创建年度笔记';
     
     // 创建表单
     const form = document.createElement('form');
@@ -10480,6 +10496,28 @@ class CalendarSettingTab extends PluginSettingTab {
           await this.plugin.updateSettings({ quarterlyFolderPath: value });
         }));
 
+    containerEl.createEl('h3', { text: '📅 月度笔记设置' });
+
+    new Setting(containerEl)
+      .setName('标题格式')
+      .setDesc('支持 YYYY（年份）、MM（月份），例如：YYYY年MM月')
+      .addText(text => text
+        .setPlaceholder('YYYY年MM月')
+        .setValue(this.plugin.settings.monthlyTitleFormat)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ monthlyTitleFormat: value });
+        }));
+
+    new Setting(containerEl)
+      .setName('默认文件夹路径')
+      .setDesc('创建月度笔记时的默认保存路径（留空为根目录）')
+      .addText(text => text
+        .setPlaceholder('例如: notes/月度')
+        .setValue(this.plugin.settings.monthlyFolderPath)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ monthlyFolderPath: value });
+        }));
+
     containerEl.createEl('h3', { text: '📆 年度笔记设置' });
 
     new Setting(containerEl)
@@ -10581,3 +10619,5 @@ class CalendarSettingTab extends PluginSettingTab {
     modal.open();
   }
 }
+
+/* nosourcemap */
