@@ -30,7 +30,12 @@ const DEFAULT_SETTINGS = {
   yearlyTitleFormat: 'YYYY',
   yearlyFolderPath: '',
   monthlyTitleFormat: 'YYYY年MM月',
-  monthlyFolderPath: ''
+  monthlyFolderPath: '',
+  // 季度显示配置（v0.3.5 新增）
+  showQuarterly: true,
+  quarterlyMode: 'number',   // 'number' | 'season' | 'custom'
+  quarterStartMonth: 1,      // 1-12，首个季的起始月
+  quarterlyCustomNames: '春季,夏季,秋季,冬季'
 };
 
 /**
@@ -64,6 +69,10 @@ class CalendarModel {
     this.yearlyFolderPath = settings.yearlyFolderPath || '';
     this.monthlyTitleFormat = settings.monthlyTitleFormat || 'YYYY年MM月';
     this.monthlyFolderPath = settings.monthlyFolderPath || '';
+    this.showQuarterly = settings.showQuarterly !== undefined ? settings.showQuarterly : true;
+    this.quarterlyMode = settings.quarterlyMode || 'number';
+    this.quarterStartMonth = settings.quarterStartMonth || 1;
+    this.quarterlyCustomNames = settings.quarterlyCustomNames || '春季,夏季,秋季,冬季';
     // 初始化时默认选中今天
     const today = new Date();
     this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -9033,6 +9042,10 @@ module.exports = class NoteCalendarPlugin extends Plugin {
         view.model.yearlyFolderPath = this.settings.yearlyFolderPath;
         view.model.monthlyTitleFormat = this.settings.monthlyTitleFormat;
         view.model.monthlyFolderPath = this.settings.monthlyFolderPath;
+        view.model.showQuarterly = this.settings.showQuarterly;
+        view.model.quarterlyMode = this.settings.quarterlyMode;
+        view.model.quarterStartMonth = this.settings.quarterStartMonth;
+        view.model.quarterlyCustomNames = this.settings.quarterlyCustomNames;
         view.render();
       }
     });
@@ -9884,6 +9897,38 @@ class CalendarView extends ItemView {
   }
 
   /**
+   * 根据当前配置获取月份对应的季度名称
+   * @param {number} month - 月份 1-12
+   * @returns {string} 季度名称，如 "1季度" / "春季" / 自定义
+   */
+  getQuarterName(month) {
+    const startMonth = this.model.quarterStartMonth || 1;
+    const adjustedIndex = Math.floor(((month - startMonth + 12) % 12) / 3);
+    const mode = this.model.quarterlyMode || 'number';
+
+    switch (mode) {
+      case 'season': {
+        const names = ['春季', '夏季', '秋季', '冬季'];
+        return names[adjustedIndex] || `${adjustedIndex + 1}`;
+      }
+      case 'custom': {
+        const raw = this.model.quarterlyCustomNames || '';
+        const parsed = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        // 补齐或截断到恰好4个名称，确保下标越界时也有兜底
+        const defaults = ['Q1', 'Q2', 'Q3', 'Q4'];
+        const customNames = [];
+        for (let i = 0; i < 4; i++) {
+          customNames[i] = parsed[i] || defaults[i];
+        }
+        return customNames[adjustedIndex] || `${adjustedIndex + 1}`;
+      }
+      case 'number':
+      default:
+        return `${adjustedIndex + 1}`;
+    }
+  }
+
+  /**
    * 根据笔记类型和日期生成笔记标题
    * @param {string} type - daily / weekly / quarterly / yearly
    * @param {Date} date - 日期对象
@@ -9906,7 +9951,7 @@ class CalendarView extends ItemView {
       case 'quarterly':
         return this.model.quarterlyTitleFormat
           .replace('YYYY', year)
-          .replace('{quarter}', Math.floor(date.getMonth() / 3) + 1);
+          .replace('{quarter}', this.getQuarterName(date.getMonth() + 1));
       case 'yearly':
         return this.model.yearlyTitleFormat
           .replace('YYYY', year);
@@ -10218,7 +10263,15 @@ class CalendarView extends ItemView {
   updateHeader() {
     if (this.titleEl && this.lunarTitleEl) {
       const { year, month } = this.model.getViewDate();
-      this.titleEl.textContent = `${year}年 ${month}月`;
+      // 第一行：公历年月 + 季度
+      let titleText = `${year}年 ${month}月`;
+      if (this.model.showQuarterly) {
+        const quarterName = this.getQuarterName(month);
+        const mode = this.model.quarterlyMode || 'number';
+        titleText += mode === 'number' ? ` ${quarterName}季度` : ` ${quarterName}`;
+      }
+      this.titleEl.textContent = titleText;
+      // 第二行：农历年月
       if (this.model.showLunarDate) {
         var lunarDay = Solar.fromYmd(year, month, 1).getLunar();
         var str = lunarDay.getYearInGanZhi() + lunarDay.getYearShengXiao() + "年 " + lunarDay.getMonthInChinese() + "月";
@@ -10429,8 +10482,66 @@ class CalendarSettingTab extends PluginSettingTab {
           });
       });
 
+    new Setting(containerEl)
+      .setName('显示季度')
+      .setDesc('在日历标题中显示当前季度')
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.settings.showQuarterly)
+          .onChange(async (value) => {
+            await this.plugin.updateSettings({ showQuarterly: value });
+          });
+      });
+
+    // ========== 季度显示设置 ==========
+    containerEl.createEl('h3', { text: '季度显示设置' });
+
+    const currentMode = this.plugin.settings.quarterlyMode || 'number';
+    new Setting(containerEl)
+      .setName('季度显示模式')
+      .setDesc('选择季度的显示方式')
+      .addDropdown(dropdown => dropdown
+        .addOption('number', '数字（1季度、2季度…）')
+        .addOption('season', '春夏秋冬（春季、夏季…）')
+        .addOption('custom', '自定义命名')
+        .setValue(currentMode)
+        .onChange(async (value) => {
+          await this.plugin.updateSettings({ quarterlyMode: value });
+          this.display();
+        }));
+
+    if (currentMode === 'season' || currentMode === 'custom') {
+      new Setting(containerEl)
+        .setName('首季起始月份')
+        .setDesc('设置第一个季度从哪个月开始')
+        .addDropdown(dropdown => {
+          for (let i = 1; i <= 12; i++) {
+            dropdown.addOption(String(i), `${i}月`);
+          }
+          dropdown.setValue(String(this.plugin.settings.quarterStartMonth || 1))
+            .onChange(async (value) => {
+              await this.plugin.updateSettings({ quarterStartMonth: parseInt(value) });
+            });
+        });
+    }
+
+    if (currentMode === 'custom') {
+      new Setting(containerEl)
+        .setName('自定义季度名称')
+        .setDesc('用逗号分隔四个季度的名称，需恰好4个。例如：Q1,Q2,Q3,Q4')
+        .addText(text => text
+          .setPlaceholder('春季,夏季,秋季,冬季')
+          .setValue(this.plugin.settings.quarterlyCustomNames)
+          .onChange(async (value) => {
+            const count = value.split(',').filter(s => s.trim().length > 0).length;
+            if (count > 0 && count !== 4) {
+              new Notice(`当前输入了 ${count} 个名称，季度需要恰好 4 个，不足部分将自动补齐`);
+            }
+            await this.plugin.updateSettings({ quarterlyCustomNames: value });
+          }));
+    }
+
     // ========== 笔记创建设置 ==========
-    containerEl.createEl('h3', { text: '📓 日记设置' });
+    containerEl.createEl('h3', { text: '日记设置' });
 
     new Setting(containerEl)
       .setName('标题格式')
@@ -10452,7 +10563,7 @@ class CalendarSettingTab extends PluginSettingTab {
           await this.plugin.updateSettings({ dailyFolderPath: value });
         }));
 
-    containerEl.createEl('h3', { text: '📅 周记设置' });
+    containerEl.createEl('h3', { text: '周记设置' });
 
     new Setting(containerEl)
       .setName('标题格式')
@@ -10474,7 +10585,7 @@ class CalendarSettingTab extends PluginSettingTab {
           await this.plugin.updateSettings({ weeklyFolderPath: value });
         }));
 
-    containerEl.createEl('h3', { text: '📊 季度笔记设置' });
+    containerEl.createEl('h3', { text: '季度笔记设置' });
 
     new Setting(containerEl)
       .setName('标题格式')
@@ -10496,7 +10607,7 @@ class CalendarSettingTab extends PluginSettingTab {
           await this.plugin.updateSettings({ quarterlyFolderPath: value });
         }));
 
-    containerEl.createEl('h3', { text: '📅 月度笔记设置' });
+    containerEl.createEl('h3', { text: '月度笔记设置' });
 
     new Setting(containerEl)
       .setName('标题格式')
@@ -10518,7 +10629,7 @@ class CalendarSettingTab extends PluginSettingTab {
           await this.plugin.updateSettings({ monthlyFolderPath: value });
         }));
 
-    containerEl.createEl('h3', { text: '📆 年度笔记设置' });
+    containerEl.createEl('h3', { text: '年度笔记设置' });
 
     new Setting(containerEl)
       .setName('标题格式')
@@ -10541,7 +10652,7 @@ class CalendarSettingTab extends PluginSettingTab {
         }));
 
     // ========== 笔记扫描 ==========
-    containerEl.createEl('h3', { text: '🔍 笔记扫描' });
+    containerEl.createEl('h3', { text: '笔记扫描' });
 
     new Setting(containerEl)
       .setName('扫描目录')
