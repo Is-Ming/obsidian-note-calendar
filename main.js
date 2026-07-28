@@ -9828,6 +9828,21 @@ class CalendarView extends ItemView {
     titleEl.className = 'calendar-notes-title';
     titleEl.textContent = `${year}年${month}月${day}日`;
     titleContainer.appendChild(titleEl);
+
+    // 农历日期（受"显示农历日期"开关控制）
+    if (this.model.showLunarDate) {
+      try {
+        const solarDay = Solar.fromYmd(year, month, day);
+        const lunarDay = solarDay.getLunar();
+        const lunarStr = `${lunarDay.getYearInGanZhi()}${lunarDay.getYearShengXiao()}年 ${lunarDay.getMonthInChinese()}月${lunarDay.getDayInChinese()}`;
+        const lunarEl = document.createElement('div');
+        lunarEl.className = 'calendar-notes-lunar';
+        lunarEl.textContent = lunarStr;
+        titleContainer.appendChild(lunarEl);
+      } catch (e) {
+        // 农历解析失败时静默跳过
+      }
+    }
     
     this.notesList.appendChild(titleContainer);
 

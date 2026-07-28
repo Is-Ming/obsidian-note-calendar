@@ -540,13 +540,22 @@
   flex: 1;
 }
 
-/* 笔记标题容器 */
+/* 笔记标题容器 — 列排列，标题+农历上下居中 */
 .calendar-notes-title-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
   position: relative;
+}
+
+/* 笔记列表农历日期 */
+.calendar-notes-lunar {
+  font-size: calc(var(--calendar-font-size) * 0.9);
+  color: var(--calendar-text-muted);
+  text-align: center;
+  margin-top: 2px;
 }
 
 /* 创建笔记按钮 */
