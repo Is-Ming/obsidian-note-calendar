@@ -10279,7 +10279,7 @@ class CalendarView extends ItemView {
     if (this.titleEl && this.lunarTitleEl) {
       const { year, month } = this.model.getViewDate();
       // 第一行：公历年月 + 季度
-      let titleText = `${year}年 ${month}月`;
+      let titleText = `${year}年 ${String(month).padStart(2, '0')}月`;
       if (this.model.showQuarterly) {
         const quarterName = this.getQuarterName(month);
         const mode = this.model.quarterlyMode || 'number';
