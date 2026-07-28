@@ -6,6 +6,28 @@
 [![Downloads](https://img.shields.io/github/downloads/Is-Ming/obsidian-note-calendar/total)](https://github.com/Is-Ming/obsidian-note-calendar/releases)
 [![License](https://img.shields.io/github/license/Is-Ming/obsidian-note-calendar)](LICENSE)
 
+## Changelog
+
+### v1.2.0 — Monthly Notes & Quarterly Display (2026-07-28)
+- Added monthly note creation and configuration
+- Quarterly display in calendar header (numeric/season/custom)
+- Lunar date shown in notes list
+
+### v1.1.0 — Note Config & Inline Lunar (2026-07-24)
+- Independent title format and folder path per note type
+- lunar.js inlined into main.js, fully self-contained
+- Nav button restyling, centered title layout
+
+### v1.0.5 — Bug Fixes (2026-07-24)
+- Fixed calendar header, notes list scrolling independently
+
+### v1.0.4 — New Features (2026-07-15)
+- Added theme mode setting (Follow Obsidian / Dark / Light)
+
+### v1.0.3 — Fixes & Improvements (2026-07-08)
+- Replaced hardcoded colors with Obsidian native CSS variables
+- Fixed lunar.js path resolution
+
 ## Introduction
 
 An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holidays, work-day adjustments, and solar terms. It automatically associates notes with dates and supports quick creation of daily, weekly, monthly, quarterly, and yearly notes.
@@ -59,28 +81,6 @@ Buttons on the note list header: `[+ 周 月 季 年]` — click to create daily
 ### Note Management
 - Auto-refresh on file create/modify/rename/delete
 - Click a note title to open the corresponding file
-
-## Changelog
-
-### v1.2.0 — Monthly Notes & Quarterly Display (2026-07-28)
-- Added monthly note creation and configuration
-- Quarterly display in calendar header (numeric/season/custom)
-- Lunar date shown in notes list
-
-### v1.1.0 — Note Config & Inline Lunar (2026-07-24)
-- Independent title format and folder path per note type
-- lunar.js inlined into main.js, fully self-contained
-- Nav button restyling, centered title layout
-
-### v1.0.5 — Bug Fixes (2026-07-24)
-- Fixed calendar header, notes list scrolling independently
-
-### v1.0.4 — New Features (2026-07-15)
-- Added theme mode setting (Follow Obsidian / Dark / Light)
-
-### v1.0.3 — Fixes & Improvements (2026-07-08)
-- Replaced hardcoded colors with Obsidian native CSS variables
-- Fixed lunar.js path resolution
 
 ## Installation Guide
 
