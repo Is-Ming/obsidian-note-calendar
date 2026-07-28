@@ -2,67 +2,85 @@
 
 **[English Version](README-en.md) | [中文版本](README.md)**
 
+[![GitHub release](https://img.shields.io/github/v/release/Is-Ming/obsidian-note-calendar)](https://github.com/Is-Ming/obsidian-note-calendar/releases)
+[![Downloads](https://img.shields.io/github/downloads/Is-Ming/obsidian-note-calendar/total)](https://github.com/Is-Ming/obsidian-note-calendar/releases)
+[![License](https://img.shields.io/github/license/Is-Ming/obsidian-note-calendar)](LICENSE)
+
 ## Introduction
 
-This is a Obsidian calendar plugin that supports displaying lunar calendar, holidays, work day adjustments, solar terms, and other information. It supports displaying and creating notes associated with the calendar for existing notes updates/creations.
+An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holidays, work-day adjustments, and solar terms. It automatically associates notes with dates and supports quick creation of daily, weekly, monthly, quarterly, and yearly notes.
 
 ## Features
 
-1. **Calendar Views**：Supports displaying Gregorian calendar, lunar calendar, work day adjustments, solar terms, holidays, and other information. Supports switching between monthly and yearly views.
+1. **Calendar View** — Monthly view with week numbers, Gregorian + lunar + festivals + work adjustments + solar terms.
 
-2. **Note Management**：Supports retrieving note properties, displaying summaries of note updates/creations, and automatically refreshing the notes list. Green dots indicate new notes, and blue dots indicate updated notes.
+2. **Note Association** — Automatically scans vault notes and marks them on the calendar by creation/modification date (green = new, blue = updated).
 
-3. **Note Creation**：Supports creating daily notes, weekly notes, quarterly notes, and yearly notes, with customizable note name formats.
+3. **Note Creation** — Supports five note types: daily, weekly, monthly, quarterly, yearly. Each type has its own configurable title format and folder path.
 
-4. **Quick Creation**：Supports creating notes directly in the calendar view, click the buttons in the notes list to create different types of notes.
+4. **Quarterly Display** — Shows the current quarter in the calendar header. Supports numeric (Q1), seasonal (Spring), or custom naming with adjustable start month.
 
-5. **Responsive Design**：Adapts to different screen sizes, providing a good user experience.
+5. **Color Reset** — Theme color and weekend color are customizable and can be reset to defaults with one click.
 
 ## Plugin Settings
 
-### Basic Settings
+### Appearance
+- **Theme Mode**: Follow Obsidian / Dark / Light
+- **Week Start Day**: Sunday or Monday
+- **Weekend Color / Theme Color**: Customizable, click ⟳ to reset
+- **Font / Font Size**: 11 font options, size 10-20px
 
-- **Theme Mode**：Select the calendar background theme mode (Follow Obsidian / Dark / Light), with Obsidian default color values for dark and light modes
-- **Week Start Day**：Select whether the first day of the week is Sunday or Monday
-- **Weekend Color**：Set the color for Saturday and Sunday display
-- **Theme Color**：Set the display color for today, selected state, and holidays
-- **Font**：Select the font used for the calendar, supporting default, Microsoft YaHei, SimSun, SimHei, Arial, Helvetica, Verdana, Tahoma, Segoe UI
-- **Font Size**：Set the calendar text size (10-20px)
+### Display
+- Solar holidays, work adjustments, lunar dates, lunar holidays, solar terms — each with an independent toggle
 
-### Display Settings
+### Quarterly Display
+- **Quarter Mode**: Numeric (Q1) / Seasonal (Spring) / Custom naming
+- **Start Month**: Set which month the first quarter begins (seasonal/custom mode only)
+- **Custom Quarter Names**: Comma-separated 4 names, auto-padded if incomplete
 
-- **Show Solar Holidays**：Control whether to display solar holiday information
-- **Show Work Day Adjustments**：Control whether to display work day adjustment information
-- **Show Lunar Date**：Control whether to display lunar date, month, and year
-- **Show Lunar Holidays**：Control whether to display lunar holiday information
-- **Show Solar Terms**：Control whether to display solar term information
+### Note Type Settings (Daily / Weekly / Monthly / Quarterly / Yearly)
+- Each type has its own **title format** (supports YYYY / MM / DD / {week} / {quarter}, etc.)
+- Each type has its own **default folder path**
 
-### Note Settings
-
-- **Note Folder Path**：Set the folder path for scanning notes (leave blank for root directory)
-- **Date Format**：Set the default date format for new notes, supporting YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY, MM/DD/YYYY
-- **Rescan Notes**：Click the button to rescan all notes
+### Note Scanning
+- **Scan Directory**: Limit scanning to a subdirectory (leave blank for whole vault). Independent from note creation paths.
+- **Scan Now**: Manually trigger a re-scan.
 
 ## Usage
 
 ### Basic Operations
+- Use `‹‹` `‹` `›` `››` to navigate between months/years
+- Click **Today** to jump back to current date
+- Click any date to view its notes
 
-1. **Navigate Dates**：Use the arrow buttons at the top of the calendar to navigate to the previous or next month/year.
-
-2. **View Notes**：Click on a date in the calendar to view the notes list for that day.
-
-### Note Creation
-1. **Create Daily Note**：Click the "+" button in the notes list, enter the title and folder path in the pop-up dialog, and click confirm to create.
-
-2. **Create Weekly Note**：Click the "周" (Week) button in the notes list, the system will automatically generate a default title in the format "YYYY-n周" (YYYY-nth Week).
-
-3. **Create Quarterly Note**：Click the "季" (Quarter) button in the notes list, the system will automatically generate a default title in the format "YYYY年-n季度" (YYYY-nth Quarter).
-
-4. **Create Yearly Note**：Click the "年" (Year) button in the notes list, the system will automatically generate a default title in the format "YYYY".
+### Create Notes
+Buttons on the note list header: `[+ 周 月 季 年]` — click to create daily, weekly, monthly, quarterly, or yearly notes. Title and path are editable in the dialog.
 
 ### Note Management
-- **Auto Refresh**：When creating, modifying, renaming, or deleting notes, the calendar will automatically refresh to display the latest note status.
-- **Notes List**：Displays all notes for the currently selected date, click on the note name to open the note directly.
+- Auto-refresh on file create/modify/rename/delete
+- Click a note title to open the corresponding file
+
+## Changelog
+
+### v1.2.0 — Monthly Notes & Quarterly Display (2026-07-28)
+- Added monthly note creation and configuration
+- Quarterly display in calendar header (numeric/season/custom)
+- Lunar date shown in notes list
+
+### v1.1.0 — Note Config & Inline Lunar (2026-07-24)
+- Independent title format and folder path per note type
+- lunar.js inlined into main.js, fully self-contained
+- Nav button restyling, centered title layout
+
+### v1.0.5 — Bug Fixes (2026-07-24)
+- Fixed calendar header, notes list scrolling independently
+
+### v1.0.4 — New Features (2026-07-15)
+- Added theme mode setting (Follow Obsidian / Dark / Light)
+
+### v1.0.3 — Fixes & Improvements (2026-07-08)
+- Replaced hardcoded colors with Obsidian native CSS variables
+- Fixed lunar.js path resolution
 
 ## Installation Guide
 
