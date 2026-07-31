@@ -646,6 +646,82 @@
   font-size: calc(var(--calendar-font-size) * 0.9);
 }
 
+/* 文件夹选择器下拉列表（fixed 挂载在 body，位置由 JS 设置） */
+.calendar-folder-list {
+  max-height: 220px;
+  overflow-y: auto;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--calendar-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.calendar-folder-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: var(--calendar-font-size);
+  color: var(--calendar-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-folder-item:hover {
+  background-color: var(--calendar-hover);
+}
+
+/* 键盘上下键选中的项：主题色高亮，醒目 */
+.calendar-folder-item-active {
+  background-color: var(--calendar-primary);
+  color: #ffffff;
+}
+
+.calendar-folder-item-selected {
+  background-color: var(--calendar-hover);
+  color: var(--calendar-primary);
+}
+
+.calendar-folder-empty {
+  padding: 8px 10px;
+  color: var(--calendar-text-muted);
+  font-size: calc(var(--calendar-font-size) * 0.9);
+  cursor: default;
+}
+
+/* 展开箭头 — 三角与文字字号匹配，热区适中不撑高行 */
+.calendar-folder-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-right: 2px;
+  border-radius: 4px;
+  color: var(--calendar-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.calendar-folder-arrow:hover {
+  background-color: var(--calendar-hover);
+  color: var(--calendar-primary);
+}
+
+/* 无子级的占位箭头：不可点击 */
+.calendar-folder-arrow-placeholder {
+  cursor: default;
+}
+
+.calendar-folder-arrow-placeholder:hover {
+  background-color: transparent;
+  color: var(--calendar-text-muted);
+}
+
 /* 笔记列表滚动条美化 */
 .calendar-notes-items::-webkit-scrollbar {
   width: 4px;

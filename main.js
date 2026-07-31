@@ -10038,6 +10038,11 @@ class CalendarView extends ItemView {
     form.style.display = 'flex';
     form.style.flexDirection = 'column';
     form.style.gap = '16px';
+    // 阻止 Enter 触发表单默认提交（页面刷新），由确认按钮统一处理
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      confirmBtn.click();
+    });
     
     // 标题输入框
     const titleDiv = document.createElement('div');
@@ -10060,27 +10065,292 @@ class CalendarView extends ItemView {
     titleDiv.appendChild(titleInput);
     form.appendChild(titleDiv);
     
-    // 文件夹路径输入框
+    // 文件夹路径输入框（支持筛选和选择器）
     const folderDiv = document.createElement('div');
     folderDiv.style.display = 'flex';
     folderDiv.style.flexDirection = 'column';
+    folderDiv.style.position = 'relative';
     
     const folderLabel = document.createElement('label');
     folderLabel.textContent = '文件夹路径:';
     folderLabel.style.marginBottom = '4px';
     folderDiv.appendChild(folderLabel);
     
+    const folderInputWrap = document.createElement('div');
+    folderInputWrap.style.display = 'flex';
+    folderInputWrap.style.gap = '6px';
+    
     const folderInput = document.createElement('input');
     folderInput.type = 'text';
     folderInput.value = defaultFolder;
     folderInput.placeholder = '例如: notes/日记';
+    folderInput.style.flex = '1';
     folderInput.style.padding = '8px';
     folderInput.style.border = '1px solid var(--calendar-border)';
     folderInput.style.borderRadius = '4px';
     folderInput.style.backgroundColor = 'var(--calendar-bg)';
     folderInput.style.color = 'var(--calendar-text)';
-    folderDiv.appendChild(folderInput);
+    folderInputWrap.appendChild(folderInput);
+    
+    // 文件夹列表图标按钮
+    const folderPickerBtn = document.createElement('button');
+    folderPickerBtn.type = 'button';
+    folderPickerBtn.textContent = '📁';
+    folderPickerBtn.title = '选择文件夹';
+    folderPickerBtn.style.padding = '8px 10px';
+    folderPickerBtn.style.border = '1px solid var(--calendar-border)';
+    folderPickerBtn.style.borderRadius = '4px';
+    folderPickerBtn.style.backgroundColor = 'var(--calendar-bg)';
+    folderPickerBtn.style.color = 'var(--calendar-text)';
+    folderPickerBtn.style.cursor = 'pointer';
+    folderPickerBtn.style.flexShrink = '0';
+    folderInputWrap.appendChild(folderPickerBtn);
+    
+    folderDiv.appendChild(folderInputWrap);
+    
+    // 文件夹下拉列表
+    const folderList = document.createElement('div');
+    folderList.className = 'calendar-folder-list';
+    folderList.style.display = 'none';
+    folderDiv.appendChild(folderList);
     form.appendChild(folderDiv);
+    
+    // ===== 文件夹选择器逻辑 =====
+    const expandedPaths = new Set(); // 树状展开状态
+    let listVisible = false;
+    let activeIndex = -1;
+    
+    // 获取全部文件夹路径（缓存，排除根目录和隐藏目录）
+    let allFolderPaths = null;
+    const getFolderPaths = () => {
+      if (!allFolderPaths) {
+        // 排除根目录对象（其 path 可能是 '' 或 '/'，直接按对象排除最可靠）
+        const rootPath = this.app.vault.getRoot().path;
+        allFolderPaths = this.app.vault.getAllLoadedFiles()
+          .filter(f => f.children !== undefined && f.path !== rootPath) // TFolder 才有 children
+          .map(f => f.path)
+          .filter(p => {
+            if (!p || p === '/') return false;
+            return !p.split('/').some(seg => seg && seg.startsWith('.'));
+          });
+      }
+      return allFolderPaths;
+    };
+    
+    // 构建文件夹树
+    const buildTree = (paths) => {
+      const root = { name: '', path: '', children: new Map() };
+      paths.forEach(p => {
+        const segs = p.split('/');
+        let node = root;
+        let cur = '';
+        segs.forEach(s => {
+          cur = cur ? `${cur}/${s}` : s;
+          if (!node.children.has(s)) {
+            node.children.set(s, { name: s, path: cur, children: new Map() });
+          }
+          node = node.children.get(s);
+        });
+      });
+      return root;
+    };
+    
+    const toggleFolderList = (show) => {
+      listVisible = show;
+      activeIndex = -1;
+      if (show) {
+        // 挂载到 body 上以 fixed 定位浮层展示，避免被弹窗裁剪产生内部滚动条
+        const rect = folderInput.getBoundingClientRect();
+        folderList.style.display = 'block';
+        folderList.style.position = 'fixed';
+        folderList.style.top = `${rect.bottom + 4}px`;
+        folderList.style.left = `${rect.left}px`;
+        folderList.style.width = `${Math.max(rect.width, 260)}px`;
+        folderList.style.maxWidth = '70vw';
+        if (folderList.parentElement !== document.body) {
+          document.body.appendChild(folderList);
+        }
+        folderList.scrollTop = 0; // 重置滚动，避免沿用上次打开的残留位置
+        // 预填配置路径时：先标记默认路径的祖先为展开，渲染后仅定位一次
+        if (defaultFolder) {
+          markExpandedPath(defaultFolder);
+        }
+        renderFolderList();
+        if (defaultFolder) {
+          scrollToPath(defaultFolder);
+        }
+      } else {
+        folderList.style.display = 'none';
+        if (folderList.parentElement === document.body) {
+          document.body.removeChild(folderList);
+        }
+      }
+    };
+    
+    // 渲染列表：空输入=树状懒加载，有输入=扁平筛选（保留滚动位置）
+    const renderFolderList = () => {
+      const filter = folderInput.value.trim();
+      const prevScrollTop = folderList.scrollTop;
+      folderList.empty();
+      activeIndex = -1;
+      
+      if (!filter) {
+        const tree = buildTree(getFolderPaths());
+        const renderNode = (node, depth) => {
+          node.children.forEach(child => {
+            folderList.appendChild(createFolderRow(child, depth));
+            if (expandedPaths.has(child.path)) {
+              renderNode(child, depth + 1);
+            }
+          });
+        };
+        renderNode(tree, 0);
+      } else {
+        const matched = getFolderPaths().filter(p => p.includes(filter));
+        if (matched.length > 0) {
+          matched.forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'calendar-folder-item';
+            row.dataset.path = p;
+            row.textContent = p;
+            row.onclick = () => { folderInput.value = p; toggleFolderList(false); };
+            folderList.appendChild(row);
+          });
+        } else {
+          const empty = document.createElement('div');
+          empty.className = 'calendar-folder-empty';
+          empty.textContent = '无匹配文件夹';
+          folderList.appendChild(empty);
+        }
+      }
+      // 恢复渲染前的滚动位置，避免展开/收起时列表跳动
+      folderList.scrollTop = prevScrollTop;
+    };
+    
+    // 树节点行（带展开箭头，箭头热区放大便于点击）
+    const createFolderRow = (child, depth) => {
+      const row = document.createElement('div');
+      row.className = 'calendar-folder-item';
+      row.dataset.path = child.path;
+      row.style.paddingLeft = `${depth * 16 + 2}px`;
+      
+      const arrow = document.createElement('span');
+      arrow.className = 'calendar-folder-arrow';
+      if (child.children.size > 0) {
+        arrow.textContent = expandedPaths.has(child.path) ? '▾' : '▸';
+        arrow.title = expandedPaths.has(child.path) ? '收起' : '展开';
+        arrow.onclick = (e) => {
+          e.stopPropagation();
+          if (expandedPaths.has(child.path)) {
+            expandedPaths.delete(child.path);
+          } else {
+            expandedPaths.add(child.path);
+          }
+          renderFolderList();
+          // 展开/收起后确保该节点仍在可视区域内
+          const row = folderList.querySelector(`[data-path="${child.path}"]`);
+          if (row) {
+            row.scrollIntoView({ block: 'nearest' });
+          }
+        };
+      } else {
+        // 无子级的节点：占位保持对齐，不可点击
+        arrow.classList.add('calendar-folder-arrow-placeholder');
+      }
+      row.appendChild(arrow);
+      
+      const name = document.createElement('span');
+      name.textContent = child.name;
+      row.appendChild(name);
+      
+      row.onclick = () => {
+        folderInput.value = child.path;
+        toggleFolderList(false);
+      };
+      
+      return row;
+    };
+    
+    // 标记路径及其所有祖先为展开状态（不渲染，需配合 renderFolderList）
+    const markExpandedPath = (path) => {
+      const segs = path.split('/').filter(Boolean);
+      let cur = '';
+      segs.forEach(s => {
+        cur = cur ? `${cur}/${s}` : s;
+        expandedPaths.add(cur);
+      });
+    };
+
+    // 定位并高亮指定路径（仅列表打开时调用一次）
+    const scrollToPath = (path) => {
+      const target = folderList.querySelector(`[data-path="${path}"]`);
+      if (target) {
+        target.classList.add('calendar-folder-item-selected');
+        target.scrollIntoView({ block: 'center' });
+      }
+    };
+    
+    // 键盘导航
+    const getVisibleItems = () => [...folderList.querySelectorAll('.calendar-folder-item')];
+    const moveActive = (delta) => {
+      const items = getVisibleItems();
+      if (items.length === 0) return;
+      activeIndex = (activeIndex + delta + items.length) % items.length;
+      items.forEach((el, i) => el.classList.toggle('calendar-folder-item-active', i === activeIndex));
+      items[activeIndex].scrollIntoView({ block: 'nearest' });
+    };
+    
+    // 输入时自动筛选
+    folderInput.addEventListener('input', () => {
+      if (folderInput.value.trim().length > 0) {
+        if (!listVisible) toggleFolderList(true);
+        else renderFolderList();
+      } else if (listVisible) {
+        renderFolderList();
+      }
+    });
+    
+    // 键盘操作：↑↓移动 Enter确认 Esc关闭（不关闭弹窗）
+    folderInput.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (!listVisible) toggleFolderList(true); else moveActive(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (!listVisible) toggleFolderList(true); else moveActive(-1); }
+      else if (e.key === 'Enter') {
+        if (listVisible) {
+          e.preventDefault();
+          const items = getVisibleItems();
+          if (activeIndex >= 0 && items[activeIndex]) {
+            // 有高亮项：选择该项
+            items[activeIndex].click();
+          } else {
+            // 无高亮项：确认当前输入值（如空=根目录），关闭列表
+            toggleFolderList(false);
+          }
+        }
+      }
+    });
+    
+    // 图标按钮：显示/关闭文件夹列表
+    folderPickerBtn.onclick = () => {
+      if (listVisible) {
+        toggleFolderList(false);
+      } else {
+        toggleFolderList(true);
+      }
+    };
+    
+    // 点击外部关闭列表
+    const outsideHandler = (e) => {
+      if (listVisible && !folderDiv.contains(e.target) && !folderList.contains(e.target)) {
+        toggleFolderList(false);
+      }
+    };
+    document.addEventListener('mousedown', outsideHandler);
+    modal.onClose = () => {
+      document.removeEventListener('mousedown', outsideHandler);
+      if (folderList.parentElement === document.body) {
+        document.body.removeChild(folderList);
+      }
+    };
     
     // 按钮容器
     const buttonContainer = document.createElement('div');
