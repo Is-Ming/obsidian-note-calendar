@@ -6,6 +6,25 @@
 [![Downloads](https://img.shields.io/github/downloads/Is-Ming/obsidian-note-calendar/total)](https://github.com/Is-Ming/obsidian-note-calendar/releases)
 [![License](https://img.shields.io/github/license/Is-Ming/obsidian-note-calendar)](LICENSE)
 
+本人是obsidian和前端的初学者，初次接触obsidian，对前端技术也比较生疏，所以这个插件的实现和功能上有一些不足，希望大家多多包涵，也欢迎一起参与讨论或对插件的改进提出批评和建议。
+
+## TODO LIST 
+以下功能待实现，后续版本迭代中逐步实现（非顺序），欢迎大家一起参与贡献。
+- [ ] 多视图支持：月视图、周视图、年视图切换
+- [ ] 创建笔记支持添加模板：
+    - [ ] 支持obsidian模板
+    - [ ] 支持templatar插件模板
+- [ ] 待办任务关联日历
+    - [ ] 支持task插件
+- [ ] 支持国际化
+- [ ] 布局优化
+- [ ] 支持老黄历的显示
+- [ ] 支持特定人群日历切换
+    - [ ] 支持佛历的显示
+    - [ ] 支持道历的显示
+- [ ] 支持移动端
+
+
 ## 更新日志
 
 ### v1.2.0 — 月度笔记与季度自定义（2026-07-28）

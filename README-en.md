@@ -6,6 +6,24 @@
 [![Downloads](https://img.shields.io/github/downloads/Is-Ming/obsidian-note-calendar/total)](https://github.com/Is-Ming/obsidian-note-calendar/releases)
 [![License](https://img.shields.io/github/license/Is-Ming/obsidian-note-calendar)](LICENSE)
 
+I'm a beginner with both Obsidian and front-end development, and this is my first time working with Obsidian. My front-end skills are still rough, so the plugin's implementation and features may have shortcomings. I hope you'll bear with me, and you're welcome to join the discussion or offer criticism and suggestions for improving the plugin.
+
+## TODO LIST
+The following features are planned for future iterations (in no particular order). Contributions are welcome!
+- [ ] Multi-view support: switch between month, week, and year views
+- [ ] Template support when creating notes:
+    - [ ] Support Obsidian templates
+    - [ ] Support Templater plugin templates
+- [ ] Task calendar integration
+    - [ ] Support Tasks plugin
+- [ ] Internationalization (i18n)
+- [ ] Layout optimization
+- [ ] Traditional Chinese almanac (老黄历) display
+- [ ] Calendar switching for specific audiences
+    - [ ] Buddhist calendar display
+    - [ ] Taoist calendar display
+- [ ] Mobile support
+
 ## Changelog
 
 ### v1.2.0 — Monthly Notes & Quarterly Display (2026-07-28)
