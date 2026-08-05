@@ -26,6 +26,10 @@ The following features are planned for future iterations (in no particular order
 
 ## Changelog
 
+### v1.3.0 — Folder Filtering in Note Creation Dialog (2026-08-05)
+- Folder path input in the note creation dialog now supports type-to-filter
+- Added 📁 folder picker with lazy-loaded tree and auto-scroll
+
 ### v1.2.0 — Monthly Notes & Quarterly Display (2026-07-28)
 - Added monthly note creation and configuration
 - Quarterly display in calendar header (numeric/season/custom)
@@ -56,7 +60,7 @@ An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holid
 
 2. **Note Association** — Automatically scans vault notes and marks them on the calendar by creation/modification date (green = new, blue = updated).
 
-3. **Note Creation** — Supports five note types: daily, weekly, monthly, quarterly, yearly. Each type has its own configurable title format and folder path.
+3. **Note Creation** — Supports five note types: daily, weekly, monthly, quarterly, yearly. Each type has its own configurable title format and folder path. The dialog's folder path field supports filtering and a 📁 tree picker.
 
 4. **Quarterly Display** — Shows the current quarter in the calendar header. Supports numeric (Q1), seasonal (Spring), or custom naming with adjustable start month.
 
@@ -94,7 +98,7 @@ An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holid
 - Click any date to view its notes
 
 ### Create Notes
-Buttons on the note list header: `[+ 周 月 季 年]` — click to create daily, weekly, monthly, quarterly, or yearly notes. Title and path are editable in the dialog.
+Buttons on the note list header: `[+ 周 月 季 年]` — click to create daily, weekly, monthly, quarterly, or yearly notes. Title and path are editable in the dialog; the folder path field supports type-to-filter and a 📁 tree picker.
 
 ### Note Management
 - Auto-refresh on file create/modify/rename/delete
