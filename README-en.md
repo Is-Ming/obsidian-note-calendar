@@ -86,10 +86,10 @@ An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holid
 
 ### Note Type Settings (Daily / Weekly / Monthly / Quarterly / Yearly)
 - Each type has its own **title format** (supports YYYY / MM / DD / {week} / {quarter}, etc.)
-- Each type has its own **default folder path**
+- Each type has its own **default folder path**, with a 📁 button next to it to pick a folder in a dialog and auto-fill
 
 ### Note Scanning
-- **Scan Directory**: Limit scanning to a subdirectory (leave blank for whole vault). Independent from note creation paths.
+- **Scan Directory**: Limit scanning to a subdirectory (leave blank for whole vault). Independent from note creation paths. Supports 📁 folder picker.
 - **Scan Now**: Manually trigger a re-scan.
 
 ## Usage
