@@ -26,6 +26,9 @@ The following features are planned for future iterations (in no particular order
 
 ## Changelog
 
+### v1.3.1 — Internal Refactoring (2026-08-07)
+- Migrated source code to TypeScript with modular structure; build process switched to esbuild
+- Pure internal refactoring, no functional changes
 ### v1.3.0 — Folder Filtering in Note Creation Dialog (2026-08-05)
 - Folder path input in the note creation dialog now supports type-to-filter
 - Added 📁 folder picker with lazy-loaded tree and auto-scroll
