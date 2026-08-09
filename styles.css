@@ -538,8 +538,17 @@
   font-weight: 600;
   text-align: center;
   color: var(--calendar-text);
-  margin-bottom: 8px;
   flex: 1;
+}
+
+/* header 最下层副行：统计靠右，农历绝对居中 */
+.calendar-notes-sub {
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  margin-top: 2px;
 }
 
 /* 笔记标题容器 — 列排列，标题+农历上下居中 */
@@ -552,12 +561,15 @@
   position: relative;
 }
 
-/* 笔记列表农历日期 */
+/* 笔记列表农历日期 — 在副行中绝对居中，不受统计影响 */
 .calendar-notes-lunar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: calc(var(--calendar-font-size) * 0.9);
   color: var(--calendar-text-muted);
   text-align: center;
-  margin-top: 2px;
+  white-space: nowrap;
 }
 
 /* 创建笔记按钮 */
@@ -634,10 +646,59 @@
 /* 笔记列表项标题 */
 .calendar-note-item-title {
   font-size: var(--calendar-font-size);
+  font-weight: 500;
   color: var(--calendar-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 笔记列表统计（标题右侧小字：共 N 篇 · 新建 X · 更新 Y） */
+.calendar-notes-stats {
+  font-size: calc(var(--calendar-font-size) * 0.8);
+  font-weight: 400;
+  color: var(--calendar-text-muted);
+  white-space: nowrap;
+}
+
+/* 笔记列表项左部（标题 + 路径） */
+.calendar-note-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 笔记路径（小字） */
+.calendar-note-item-path {
+  font-size: calc(var(--calendar-font-size) * 0.78);
+  color: var(--calendar-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 类型标签（新建 / 更新）— 位于列表项右侧 */
+.calendar-note-item-tag {
+  flex-shrink: 0;
+  font-size: calc(var(--calendar-font-size) * 0.85);
+  line-height: 1;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.calendar-note-tag-created {
+  background: color-mix(in srgb, #4caf50 20%, transparent);
+  color: #43a047;
+  border: 1px solid color-mix(in srgb, #4caf50 40%, transparent);
+}
+
+.calendar-note-tag-updated {
+  background: color-mix(in srgb, #2196f3 20%, transparent);
+  color: #1976d2;
+  border: 1px solid color-mix(in srgb, #2196f3 40%, transparent);
 }
 
 /* 空状态提示 */
@@ -742,4 +803,49 @@
   background: var(--calendar-text-muted);
 }
 
+/* ===== 设置面板分组收起 ===== */
+.calendar-settings-section-title {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
 
+.calendar-settings-section-title::before {
+  content: '▾';
+  font-size: 12px;
+  color: var(--calendar-text-muted);
+  transition: transform 0.15s;
+}
+
+.calendar-settings-section-title:hover {
+  color: var(--calendar-primary);
+}
+
+.calendar-settings-section-title:hover::before {
+  color: var(--calendar-primary);
+}
+
+/* 收起状态：隐藏分组内所有设置项 */
+.calendar-settings-section-collapsed > .setting-item {
+  display: none;
+}
+
+.calendar-settings-section-collapsed .calendar-settings-section-title {
+  margin-bottom: 4px;
+}
+
+.calendar-settings-section-collapsed .calendar-settings-section-title::before {
+  content: '▸';
+}
+
+/* 设置面板「恢复默认设置」按钮 */
+.calendar-reset-all-btn {
+  margin-top: 24px;
+  border-top: 1px solid var(--calendar-border);
+  padding-top: 16px;
+}
