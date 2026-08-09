@@ -3,12 +3,14 @@
 /* CSS变量定义 */
 :root {
   --calendar-primary: #5d4ed8;
-  --calendar-primary-hover: #4b3dc0;
+  /* hover 深色基于主题色动态生成，确保自定义主题色时不再残留默认紫色 */
+  --calendar-primary-hover: color-mix(in srgb, var(--calendar-primary) 85%, black);
   --calendar-bg: var(--background-secondary);
   --calendar-border: var(--background-modifier-border);
   --calendar-text: var(--text-normal);
   --calendar-text-muted: var(--text-muted);
-  --calendar-hover: var(--background-modifier-hover);
+  /* hover 背景基于主题色生成，避免引用 Obsidian 强调色导致自定义主题色时残留蓝色系 */
+  --calendar-hover: color-mix(in srgb, var(--calendar-primary) 10%, transparent);
   --calendar-today-bg: var(--calendar-primary);
   --calendar-today-text: #ffffff;
   --calendar-weekend-color: #e57373;
@@ -206,7 +208,7 @@
   background: var(--calendar-hover) !important;
   color: var(--calendar-primary-hover) !important;
   border-color: var(--calendar-primary-hover) !important;
-  box-shadow: 0 2px 8px rgba(93, 78, 216, 0.2) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--calendar-primary) 20%, transparent) !important;
 }
 
 /* 默认active（未选中状态） */
@@ -214,7 +216,7 @@
   background: linear-gradient(135deg, var(--calendar-primary) 0%, var(--calendar-primary-hover) 100%) !important;
   color: #ffffff !important;
   border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(93, 78, 216, 0.4) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--calendar-primary) 40%, transparent) !important;
   transform: scale(0.95);
 }
 
@@ -223,13 +225,13 @@
   background: linear-gradient(135deg, var(--calendar-primary) 0%, var(--calendar-primary-hover) 100%) !important;
   color: #ffffff !important;
   border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(93, 78, 216, 0.4) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--calendar-primary) 40%, transparent) !important;
 }
 
 /* 选中状态hover - 提高优先级 */
 .calendar-btn.calendar-today-btn-selected:hover {
-  background: linear-gradient(135deg, var(--calendar-primary-hover) 0%, #6d5df7 100%) !important;
-  box-shadow: 0 6px 20px rgba(93, 78, 216, 0.6) !important;
+  background: linear-gradient(135deg, var(--calendar-primary-hover) 0%, var(--calendar-primary) 100%) !important;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--calendar-primary) 60%, transparent) !important;
   transform: translateY(-2px) scale(1.02);
   border-color: rgba(255, 255, 255, 0.2) !important;
   color: #ffffff !important;
@@ -239,7 +241,7 @@
 .calendar-btn.calendar-today-btn-selected:active {
   background: linear-gradient(135deg, var(--calendar-primary) 0%, var(--calendar-primary-hover) 100%) !important;
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 8px rgba(93, 78, 216, 0.3) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--calendar-primary) 30%, transparent) !important;
   color: #ffffff !important;
 }
 

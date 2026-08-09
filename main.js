@@ -12011,6 +12011,8 @@ var DEFAULT_SETTINGS = {
   // 周六周日的默认颜色，柔和玫瑰色
   themeColor: "#5d4ed8",
   // 主题颜色，默认为紫色
+  followAccentColor: false,
+  // 是否跟随 Obsidian 强调色
   themeMode: "auto",
   // 主题模式：auto=跟随Obsidian, dark=深色, light=浅色
   showLunarDate: true,
@@ -12071,11 +12073,17 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
     })).addColorPicker((colorPicker) => colorPicker.setValue(this.plugin.settings.weekendColor).onChange(async (value) => {
       await this.plugin.updateSettings({ weekendColor: value });
     }));
-    new import_obsidian2.Setting(containerEl).setName("\u4E3B\u9898\u989C\u8272").setDesc("\u4ECA\u5929\u3001\u9009\u4E2D\u72B6\u6001\u548C\u8282\u5047\u65E5\u7684\u663E\u793A\u989C\u8272").addExtraButton((button) => button.setIcon("reset").setTooltip("\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u989C\u8272").onClick(() => {
-      this.showResetConfirm("\u4E3B\u9898\u989C\u8272", "themeColor", DEFAULT_SETTINGS.themeColor);
-    })).addColorPicker((colorPicker) => colorPicker.setValue(this.plugin.settings.themeColor).onChange(async (value) => {
-      await this.plugin.updateSettings({ themeColor: value });
+    new import_obsidian2.Setting(containerEl).setName("\u8DDF\u968F Obsidian \u5F3A\u8C03\u8272").setDesc("\u5F00\u542F\u540E\u4E3B\u9898\u8272\u5B9E\u65F6\u8DDF\u968F Obsidian \u7684\u5F3A\u8C03\u8272\uFF08\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u5F3A\u8C03\u8272\uFF09\uFF0C\u5E76\u9690\u85CF\u4E0B\u65B9\u7684\u4E3B\u9898\u989C\u8272\u914D\u7F6E\u9879").addToggle((toggle) => toggle.setValue(this.plugin.settings.followAccentColor).onChange(async (value) => {
+      await this.plugin.updateSettings({ followAccentColor: value });
+      this.display();
     }));
+    if (!this.plugin.settings.followAccentColor) {
+      new import_obsidian2.Setting(containerEl).setName("\u4E3B\u9898\u989C\u8272").setDesc("\u4ECA\u5929\u3001\u9009\u4E2D\u72B6\u6001\u548C\u8282\u5047\u65E5\u7684\u663E\u793A\u989C\u8272").addExtraButton((button) => button.setIcon("reset").setTooltip("\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u989C\u8272").onClick(() => {
+        this.showResetConfirm("\u4E3B\u9898\u989C\u8272", "themeColor", DEFAULT_SETTINGS.themeColor);
+      })).addColorPicker((colorPicker) => colorPicker.setValue(this.plugin.settings.themeColor).onChange(async (value) => {
+        await this.plugin.updateSettings({ themeColor: value });
+      }));
+    }
     new import_obsidian2.Setting(containerEl).setName("\u5B57\u4F53").setDesc("\u9009\u62E9\u65E5\u5386\u4F7F\u7528\u7684\u5B57\u4F53").addDropdown((dropdown) => dropdown.addOption("default", "\u9ED8\u8BA4").addOption("microsoft-yahei", "\u5FAE\u8F6F\u96C5\u9ED1").addOption("simsun", "\u5B8B\u4F53").addOption("simhei", "\u9ED1\u4F53").addOption("arial", "Arial").addOption("helvetica", "Helvetica").addOption("verdana", "Verdana").addOption("tahoma", "Tahoma").addOption("segoe-ui", "Segoe UI").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
       await this.plugin.updateSettings({ fontFamily: value });
     }));
@@ -12288,6 +12296,7 @@ var CalendarModel = class {
     this.startOfWeek = settings.startOfWeek || 0;
     this.weekendColor = settings.weekendColor || "#e57373";
     this.themeColor = settings.themeColor || "#5d4ed8";
+    this.followAccentColor = !!settings.followAccentColor;
     this.showLunarDate = settings.showLunarDate !== void 0 ? settings.showLunarDate : true;
     this.showSolarFestivals = settings.showSolarFestivals !== void 0 ? settings.showSolarFestivals : true;
     this.showLunarFestivals = settings.showLunarFestivals !== void 0 ? settings.showLunarFestivals : true;
@@ -13373,7 +13382,12 @@ var CalendarView = class extends import_obsidian3.ItemView {
   applyStyles() {
     if (!this.contentEl) return;
     this.contentEl.style.setProperty("--calendar-weekend-color", this.model.weekendColor);
-    this.contentEl.style.setProperty("--calendar-primary", this.model.themeColor);
+    this.contentEl.style.setProperty(
+      "--calendar-primary",
+      this.model.followAccentColor ? "var(--interactive-accent)" : this.model.themeColor
+    );
+    this.contentEl.style.setProperty("--calendar-primary-hover", "color-mix(in srgb, var(--calendar-primary) 85%, black)");
+    this.contentEl.style.setProperty("--calendar-hover", "color-mix(in srgb, var(--calendar-primary) 10%, transparent)");
     this.contentEl.style.setProperty("--calendar-font-family", this.getFontFamilyValue());
     this.contentEl.style.setProperty("--calendar-font-size", this.model.fontSize + "px");
     const themeMode = this.model.themeMode || "auto";
@@ -13599,6 +13613,7 @@ var NoteCalendarPlugin = class extends import_obsidian4.Plugin {
         view.model.startOfWeek = this.settings.startOfWeek;
         view.model.weekendColor = this.settings.weekendColor;
         view.model.themeColor = this.settings.themeColor;
+        view.model.followAccentColor = this.settings.followAccentColor;
         view.model.showLunarDate = this.settings.showLunarDate;
         view.model.showSolarFestivals = this.settings.showSolarFestivals;
         view.model.showLunarFestivals = this.settings.showLunarFestivals;
