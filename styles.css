@@ -32,12 +32,14 @@
   color: var(--calendar-text);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto; /* 空间极度不足时兜底滚动，避免内容被裁剪 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* 日历顶部容器（头部+网格），固定不滚动 */
+/* 日历顶部容器（头部+网格）：高度由内容决定，不参与弹性分配，避免切换日期时跳动 */
 .calendar-calendar-container {
+  display: flex;
+  flex-direction: column;
   flex-shrink: 0;
   /* 底部阴影作为与笔记列表的明显分隔 */
   box-shadow: 0 4px 8px -4px rgba(0, 0, 0, 0.15);
@@ -245,12 +247,13 @@
   color: #ffffff !important;
 }
 
-/* 日历网格 */
+/* 日历网格 — 6行均分自身高度，高度固定不随笔记列表变化 */
 .calendar-grid {
   display: grid;
   grid-template-columns: 40px repeat(7, 1fr);
-  column-gap: 4px;
-  row-gap: 4px;
+  grid-template-rows: repeat(6, 1fr);
+  column-gap: 2px;
+  row-gap: 2px;
   position: relative;
 }
 
@@ -273,7 +276,7 @@
   font-size: calc(var(--calendar-font-size) * 1.1);
   font-weight: 550;
   color: var(--calendar-text-muted);
-  padding: 8px 0;
+  padding: 4px 0;
   position: relative;
   grid-column: 1;
   grid-row: 1;
@@ -300,7 +303,7 @@
   font-size: calc(var(--calendar-font-size) * 1.1);
   font-weight: 550;
   color: var(--calendar-text-muted);
-  padding: 8px 0;
+  padding: 4px 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,7 +319,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6px 2px;
+  padding: 4px 1px;
   border-radius: 6px;
   cursor: pointer;
   font-size: var(--calendar-font-size);
@@ -324,6 +327,7 @@
   color: var(--calendar-text);
   position: relative;
   box-sizing: content-box;
+  overflow: hidden; /* 格子过小时防止内容撑破布局 */
 }
 
 .calendar-day:hover {
@@ -525,11 +529,11 @@
   margin-top: 16px;
   padding-top: 16px;
   border-top: 2px solid var(--calendar-border);
-  flex: 1;
+  flex: 1 1 auto; /* 笔记列表弹性占剩余空间，消化窗口高度变化 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 0;
+  min-height: 120px; /* 空间不足时笔记列表保留最小可视区域 */
 }
 
 /* 笔记列表日期标题 */
@@ -848,4 +852,43 @@
   margin-top: 24px;
   border-top: 1px solid var(--calendar-border);
   padding-top: 16px;
+}
+
+/* ===== 响应式适配：窄屏整体缩小字体，不隐藏内容 ===== */
+/* 中等宽度（面板变窄）：整体字号降一级，收紧间距 */
+@media (max-width: 560px) {
+  /* 字体大小由 JS 内联设置，此处用 !important 覆盖实现整体缩放 */
+  .note-calendar-view {
+    --calendar-font-size: 12px !important;
+  }
+  .calendar-grid {
+    column-gap: 2px;
+    row-gap: 2px;
+  }
+  .calendar-day {
+    padding: 4px 1px;
+  }
+  .calendar-weekday,
+  .calendar-week-number-header {
+    padding: 4px 0;
+  }
+}
+
+/* 极窄宽度：再降一级字号，压缩周数列 */
+@media (max-width: 400px) {
+  .note-calendar-view {
+    --calendar-font-size: 10px !important;
+  }
+  .calendar-grid {
+    grid-template-columns: 30px repeat(7, 1fr);
+  }
+  .calendar-grid::before {
+    left: 30px;
+  }
+  .calendar-nav-btn {
+    font-size: 14px;
+  }
+  .calendar-notes-title {
+    font-size: calc(var(--calendar-font-size) * 1.1);
+  }
 }
