@@ -247,11 +247,11 @@
   color: #ffffff !important;
 }
 
-/* 日历网格 — 6行均分自身高度，高度固定不随笔记列表变化 */
+/* 日历网格 — 表头行 + 6周日期行，全部固定高度，切换月份零波动 */
 .calendar-grid {
   display: grid;
   grid-template-columns: 40px repeat(7, 1fr);
-  grid-template-rows: repeat(6, 1fr);
+  grid-template-rows: 32px repeat(6, 52px);
   column-gap: 2px;
   row-gap: 2px;
   position: relative;
@@ -319,7 +319,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4px 1px;
+  padding: 2px 1px;
   border-radius: 6px;
   cursor: pointer;
   font-size: var(--calendar-font-size);
