@@ -18,6 +18,8 @@ The following features are planned for future iterations (in no particular order
     - [ ] Support Tasks plugin
 - [ ] Internationalization (i18n)
 - [ ] Layout optimization
+- [ ] Calendar pop-out window: 
+    - open the calendar as an independent floating window to check daily tasks/files, with one click back to the main window
 - [ ] Traditional Chinese almanac (老黄历) display
 - [ ] Calendar switching for specific audiences
     - [ ] Buddhist calendar display
