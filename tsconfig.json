@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "CommonJS",
+    "target": "ES6",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "strict": true,
+    // strict 会隐式开启 alwaysStrict，导致 esbuild 产物头部多出 "use strict"；显式关闭以保持产物行为不变
+    "alwaysStrict": false,
+    "isolatedModules": true,
+    "lib": [
+      "DOM",
+      "ES6",
+      "ES2021"
+    ],
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ]
+}
