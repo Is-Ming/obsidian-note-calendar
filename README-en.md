@@ -11,9 +11,7 @@ I'm a beginner with both Obsidian and front-end development, and this is my firs
 ## TODO LIST
 The following features are planned for future iterations (in no particular order). Contributions are welcome!
 - [ ] Multi-view support: switch between month, week, and year views
-- [ ] Template support when creating notes:
-    - [ ] Support Obsidian templates
-    - [x] Support Templater plugin templates
+- [x] Template support when creating notes: support Templater plugin templates
 - [ ] Task calendar integration
     - [ ] Support Tasks plugin
 - [ ] Internationalization (i18n)
@@ -27,6 +25,13 @@ The following features are planned for future iterations (in no particular order
 - [ ] Mobile support
 
 ## Changelog
+
+### v1.4.0 — Templater Integration & UX Improvements (2026-09-14)
+- Optional Templater template support for all five note types (no impact if not installed)
+- Folder/template file pickers in settings, with invalid-path highlighting
+- Enhanced note list: sorted by update time, count summary, type tags, and note paths
+- Collapsible settings sections and one-click reset to defaults
+- Theme color can follow Obsidian's accent color
 
 ### v1.3.1 — Internal Refactoring (2026-08-07)
 - Pure internal refactoring, no functional changes
