@@ -36,6 +36,12 @@ export interface NoteCalendarSettings {
   yearlyFolderPath: string;
   monthlyTitleFormat: string;
   monthlyFolderPath: string;
+  // 各类型笔记的 Templater 模板文件路径（留空=创建空笔记；需安装并启用 Templater 插件）
+  dailyTemplatePath: string;
+  weeklyTemplatePath: string;
+  quarterlyTemplatePath: string;
+  yearlyTemplatePath: string;
+  monthlyTemplatePath: string;
   // 季度显示配置
   showQuarterly: boolean;
   quarterlyMode: 'number' | 'season' | 'custom';

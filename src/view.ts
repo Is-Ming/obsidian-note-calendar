@@ -2,6 +2,7 @@ import { ItemView, Modal, Notice, TFile, TFolder, WorkspaceLeaf } from 'obsidian
 import { HolidayUtil, Solar } from 'lunar-javascript';
 import type NoteCalendarPlugin from './main';
 import { CalendarModel } from './model';
+import { applyTemplater } from './templater';
 import { VIEW_TYPE_CALENDAR } from './types';
 import type { CalendarDayData, NoteType } from './types';
 
@@ -1128,7 +1129,14 @@ export class CalendarView extends ItemView {
       }
 
       // 创建笔记文件
-      await this.app.vault.create(filePath, '');
+      const createdFile = await this.app.vault.create(filePath, '');
+
+      // 套用 Templater 模板（已配置且 Templater 可用时才渲染；
+      // 未安装/未启用/未配置/渲染失败均静默降级为空笔记，不影响创建流程）
+      const templatePath = this.getTemplatePathForType(type);
+      if (templatePath) {
+        await applyTemplater(this.plugin.app, createdFile, templatePath);
+      }
 
       // 显示成功通知
       new Notice('笔记创建成功');
@@ -1138,6 +1146,27 @@ export class CalendarView extends ItemView {
     } catch (error) {
       console.error('[NoteCalendar] 创建笔记失败:', error);
       new Notice('创建笔记失败');
+    }
+  }
+
+  /**
+   * 获取指定笔记类型配置的 Templater 模板路径（留空表示未配置）
+   */
+  getTemplatePathForType(type: NoteType): string {
+    const settings = this.plugin.settings;
+    switch (type) {
+      case 'daily':
+        return settings.dailyTemplatePath;
+      case 'weekly':
+        return settings.weeklyTemplatePath;
+      case 'monthly':
+        return settings.monthlyTemplatePath;
+      case 'quarterly':
+        return settings.quarterlyTemplatePath;
+      case 'yearly':
+        return settings.yearlyTemplatePath;
+      default:
+        return '';
     }
   }
 

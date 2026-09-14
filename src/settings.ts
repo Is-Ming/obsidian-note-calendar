@@ -1,7 +1,18 @@
-import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Notice, PluginSettingTab, Setting, TFile } from 'obsidian';
 import { FolderPickerModal } from './folder-picker';
+import { isTemplaterAvailable } from './templater';
 import type NoteCalendarPlugin from './main';
 import type { NoteCalendarSettings } from './types';
+
+/**
+ * 模板路径设置键（五类笔记各一）
+ */
+type TemplatePathKey =
+  | 'dailyTemplatePath'
+  | 'weeklyTemplatePath'
+  | 'quarterlyTemplatePath'
+  | 'yearlyTemplatePath'
+  | 'monthlyTemplatePath';
 
 /**
  * 默认设置
@@ -32,6 +43,12 @@ export const DEFAULT_SETTINGS: NoteCalendarSettings = {
   yearlyFolderPath: '',
   monthlyTitleFormat: 'YYYY年MM月',
   monthlyFolderPath: '',
+  // 各类型笔记的 Templater 模板路径（留空=创建空笔记）
+  dailyTemplatePath: '',
+  weeklyTemplatePath: '',
+  quarterlyTemplatePath: '',
+  yearlyTemplatePath: '',
+  monthlyTemplatePath: '',
   // 季度显示配置（v0.3.5 新增）
   showQuarterly: true,
   quarterlyMode: 'number', // 'number' | 'season' | 'custom'
@@ -295,6 +312,8 @@ export class CalendarSettingTab extends PluginSettingTab {
         .setTooltip('选择文件夹')
         .onClick(() => this.showFolderPicker('dailyFolderPath', dailyFolderInput!, '选择日记默认文件夹')));
 
+    this.createTemplateSetting(dailySection, '日记', 'dailyTemplatePath');
+
     // ========== 周记设置 ==========
     const weeklySection = this.createSection('周记设置');
 
@@ -324,6 +343,8 @@ export class CalendarSettingTab extends PluginSettingTab {
         .setIcon('folder')
         .setTooltip('选择文件夹')
         .onClick(() => this.showFolderPicker('weeklyFolderPath', weeklyFolderInput!, '选择周记默认文件夹')));
+
+    this.createTemplateSetting(weeklySection, '周记', 'weeklyTemplatePath');
 
     // ========== 季度笔记设置 ==========
     const quarterlySection = this.createSection('季度笔记设置');
@@ -355,6 +376,8 @@ export class CalendarSettingTab extends PluginSettingTab {
         .setTooltip('选择文件夹')
         .onClick(() => this.showFolderPicker('quarterlyFolderPath', quarterlyFolderInput!, '选择季度笔记默认文件夹')));
 
+    this.createTemplateSetting(quarterlySection, '季度笔记', 'quarterlyTemplatePath');
+
     // ========== 月度笔记设置 ==========
     const monthlySection = this.createSection('月度笔记设置');
 
@@ -385,6 +408,8 @@ export class CalendarSettingTab extends PluginSettingTab {
         .setTooltip('选择文件夹')
         .onClick(() => this.showFolderPicker('monthlyFolderPath', monthlyFolderInput!, '选择月度笔记默认文件夹')));
 
+    this.createTemplateSetting(monthlySection, '月度笔记', 'monthlyTemplatePath');
+
     // ========== 年度笔记设置 ==========
     const yearlySection = this.createSection('年度笔记设置');
 
@@ -414,6 +439,8 @@ export class CalendarSettingTab extends PluginSettingTab {
         .setIcon('folder')
         .setTooltip('选择文件夹')
         .onClick(() => this.showFolderPicker('yearlyFolderPath', yearlyFolderInput!, '选择年度笔记默认文件夹')));
+
+    this.createTemplateSetting(yearlySection, '年度笔记', 'yearlyTemplatePath');
 
     // ========== 笔记扫描 ==========
     const scanSection = this.createSection('笔记扫描');
@@ -488,6 +515,72 @@ export class CalendarSettingTab extends PluginSettingTab {
       onChoose: async (path) => {
         inputEl.value = path;
         await this.plugin.updateSettings({ [key]: path } as Partial<NoteCalendarSettings>);
+      }
+    }).open();
+  }
+
+  /**
+   * 创建"模板文件"设置项（五类笔记设置组共用）
+   * @param {HTMLElement} section 所属分组容器
+   * @param {string} label 笔记类型名称（用于文案）
+   * @param {TemplatePathKey} key 模板路径设置键
+   */
+  createTemplateSetting(section: HTMLElement, label: string, key: TemplatePathKey): void {
+    const templaterReady = isTemplaterAvailable(this.app);
+    let templateInput: HTMLInputElement | null = null;
+
+    new Setting(section)
+      .setName('模板文件')
+      .setDesc(
+        `创建${label}时自动套用 Templater 模板，留空则创建空笔记。\n` +
+        (templaterReady ? '' : '当前未检测到已启用的 Templater 插件，填写后暂不生效。\n') +
+        '建议避免同时启用 Templater 的"文件夹模板"指向同一目录，否则插件会自动跳过套用以避免内容重复。'
+      )
+      .addText(text => {
+        templateInput = text.inputEl;
+        text.setPlaceholder('例如: templates/模板')
+          .setValue(this.plugin.settings[key])
+          .onChange(async (value) => {
+            await this.plugin.updateSettings({ [key]: value } as Partial<NoteCalendarSettings>);
+            this.updateTemplateInputState(templateInput!, value);
+          });
+      })
+      .addExtraButton(button => button
+        .setIcon('file')
+        .setTooltip('选择模板文件')
+        .onClick(() => this.showFilePicker(key, templateInput!, `选择${label}模板文件`)));
+
+    // 初始校验一次：路径错误时红色边框提示
+    this.updateTemplateInputState(templateInput!, this.plugin.settings[key]);
+  }
+
+  /**
+   * 模板路径存在性校验：非空且文件不存在时输入框显示红色边框
+   * @param {HTMLInputElement} inputEl 模板路径输入框
+   * @param {string} path 当前路径值
+   */
+  updateTemplateInputState(inputEl: HTMLInputElement, path: string): void {
+    const trimmed = path.trim();
+    const invalid = trimmed !== ''
+      && !(this.app.vault.getAbstractFileByPath(trimmed) instanceof TFile);
+    inputEl.style.borderColor = invalid ? '#e57373' : '';
+  }
+
+  /**
+   * 打开模板文件选择弹窗（file 模式，树中可选 .md 文件），选择后自动填充并保存
+   * @param {TemplatePathKey} key 设置键名
+   * @param {HTMLInputElement} inputEl 配置项对应的文本输入框
+   * @param {string} title 弹窗标题
+   */
+  showFilePicker(key: TemplatePathKey, inputEl: HTMLInputElement, title: string): void {
+    new FolderPickerModal(this.app, {
+      title,
+      initialPath: this.plugin.settings[key],
+      mode: 'file',
+      onChoose: async (path) => {
+        inputEl.value = path;
+        await this.plugin.updateSettings({ [key]: path } as Partial<NoteCalendarSettings>);
+        this.updateTemplateInputState(inputEl, path);
       }
     }).open();
   }

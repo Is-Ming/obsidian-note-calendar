@@ -11761,10 +11761,10 @@ var require_lunar_javascript = __commonJS({
 });
 
 // src/main.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/settings.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/folder-picker.ts
 var import_obsidian = require("obsidian");
@@ -11773,8 +11773,15 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     super(app);
     this.expandedPaths = /* @__PURE__ */ new Set();
     this.allFolderPaths = null;
+    this.allFilePaths = null;
     this.activeIndex = -1;
     this.options = options;
+  }
+  /**
+   * 是否为文件选择模式
+   */
+  isFileMode() {
+    return this.options.mode === "file";
   }
   onOpen() {
     const { titleEl, contentEl } = this;
@@ -11788,7 +11795,7 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     this.input = document.createElement("input");
     this.input.type = "text";
     this.input.value = this.options.initialPath || "";
-    this.input.placeholder = "\u8F93\u5165\u7B5B\u9009\u6587\u4EF6\u5939\uFF0C\u6216\u76F4\u63A5\u70B9\u51FB\u4E0B\u65B9\u6587\u4EF6\u5939\u9009\u62E9";
+    this.input.placeholder = this.isFileMode() ? "\u8F93\u5165\u7B5B\u9009\u6A21\u677F\u6587\u4EF6\uFF0C\u6216\u70B9\u51FB\u4E0B\u65B9\u6587\u4EF6\u9009\u62E9" : "\u8F93\u5165\u7B5B\u9009\u6587\u4EF6\u5939\uFF0C\u6216\u76F4\u63A5\u70B9\u51FB\u4E0B\u65B9\u6587\u4EF6\u5939\u9009\u62E9";
     this.input.style.flex = "1";
     this.input.style.padding = "8px";
     this.input.style.border = "1px solid var(--calendar-border)";
@@ -11860,6 +11867,15 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     return this.allFolderPaths;
   }
   /**
+   * 获取全部 .md 文件路径（缓存，排除隐藏目录；file 模式用）
+   */
+  getFilePaths() {
+    if (!this.allFilePaths) {
+      this.allFilePaths = this.app.vault.getMarkdownFiles().map((f) => f.path).filter((p) => !p.split("/").some((seg) => seg && seg.startsWith(".")));
+    }
+    return this.allFilePaths;
+  }
+  /**
    * 构建文件夹树
    */
   buildTree(paths) {
@@ -11879,20 +11895,45 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     return root;
   }
   /**
-   * 渲染列表：空输入=树状懒加载（顶部含根目录选项），有输入=扁平筛选
+   * 构建"文件夹 + .md 文件"树（file 模式用）
+   * 文件挂载到所属文件夹节点下，作为 isFile 叶子节点
+   */
+  buildFileTree() {
+    const root = this.buildTree(this.getFolderPaths());
+    this.getFilePaths().forEach((fp) => {
+      const segs = fp.split("/");
+      const fileName = segs.pop();
+      let node = root;
+      let cur = "";
+      segs.forEach((s) => {
+        cur = cur ? `${cur}/${s}` : s;
+        if (!node.children.has(s)) {
+          node.children.set(s, { name: s, path: cur, children: /* @__PURE__ */ new Map() });
+        }
+        node = node.children.get(s);
+      });
+      node.children.set(fileName, { name: fileName, path: fp, children: /* @__PURE__ */ new Map(), isFile: true });
+    });
+    return root;
+  }
+  /**
+   * 渲染列表：空输入=树状懒加载，有输入=扁平筛选
+   * file 模式：树中含 .md 文件，无根目录选项；筛选按文件路径匹配
    */
   renderList() {
     const filter = this.input.value.trim();
     this.list.empty();
     this.activeIndex = -1;
     if (!filter) {
-      const rootRow = document.createElement("div");
-      rootRow.className = "calendar-folder-item";
-      rootRow.dataset.path = "";
-      rootRow.textContent = "/\uFF08\u6839\u76EE\u5F55\uFF09";
-      rootRow.onclick = () => this.choose("");
-      this.list.appendChild(rootRow);
-      const tree = this.buildTree(this.getFolderPaths());
+      if (!this.isFileMode()) {
+        const rootRow = document.createElement("div");
+        rootRow.className = "calendar-folder-item";
+        rootRow.dataset.path = "";
+        rootRow.textContent = "/\uFF08\u6839\u76EE\u5F55\uFF09";
+        rootRow.onclick = () => this.choose("");
+        this.list.appendChild(rootRow);
+      }
+      const tree = this.isFileMode() ? this.buildFileTree() : this.buildTree(this.getFolderPaths());
       const renderNode = (node, depth) => {
         node.children.forEach((child) => {
           this.list.appendChild(this.createFolderRow(child, depth));
@@ -11903,7 +11944,7 @@ var FolderPickerModal = class extends import_obsidian.Modal {
       };
       renderNode(tree, 0);
     } else {
-      const matched = this.getFolderPaths().filter((p) => p.includes(filter));
+      const matched = this.isFileMode() ? this.getFilePaths().filter((p) => p.includes(filter)) : this.getFolderPaths().filter((p) => p.includes(filter));
       if (matched.length > 0) {
         matched.forEach((p) => {
           const row = document.createElement("div");
@@ -11916,22 +11957,26 @@ var FolderPickerModal = class extends import_obsidian.Modal {
       } else {
         const empty = document.createElement("div");
         empty.className = "calendar-folder-empty";
-        empty.textContent = "\u65E0\u5339\u914D\u6587\u4EF6\u5939";
+        empty.textContent = this.isFileMode() ? "\u65E0\u5339\u914D\u6587\u4EF6" : "\u65E0\u5339\u914D\u6587\u4EF6\u5939";
         this.list.appendChild(empty);
       }
     }
   }
   /**
    * 树节点行（带展开箭头，箭头热区放大便于点击）
+   * file 模式：文件行点击即选择；文件夹行点击仅展开/收起
    */
   createFolderRow(child, depth) {
     const row = document.createElement("div");
-    row.className = "calendar-folder-item";
+    row.className = child.isFile ? "calendar-folder-item calendar-file-item" : "calendar-folder-item";
     row.dataset.path = child.path;
     row.style.paddingLeft = `${depth * 16 + 2}px`;
     const arrow = document.createElement("span");
     arrow.className = "calendar-folder-arrow";
-    if (child.children.size > 0) {
+    if (child.isFile) {
+      arrow.classList.add("calendar-folder-arrow-placeholder");
+      arrow.textContent = "\u{1F4C4}";
+    } else if (child.children.size > 0) {
       arrow.textContent = this.expandedPaths.has(child.path) ? "\u25BE" : "\u25B8";
       arrow.title = this.expandedPaths.has(child.path) ? "\u6536\u8D77" : "\u5C55\u5F00";
       arrow.onclick = (e) => {
@@ -11954,7 +11999,24 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     const name = document.createElement("span");
     name.textContent = child.name;
     row.appendChild(name);
-    row.onclick = () => this.choose(child.path);
+    if (child.isFile) {
+      row.onclick = () => this.choose(child.path);
+    } else if (this.isFileMode()) {
+      row.onclick = () => {
+        if (this.expandedPaths.has(child.path)) {
+          this.expandedPaths.delete(child.path);
+        } else {
+          this.expandedPaths.add(child.path);
+        }
+        this.renderList();
+        const rowEl = this.list.querySelector(`[data-path="${child.path}"]`);
+        if (rowEl) {
+          rowEl.scrollIntoView({ block: "nearest" });
+        }
+      };
+    } else {
+      row.onclick = () => this.choose(child.path);
+    }
     return row;
   }
   /**
@@ -12003,6 +12065,98 @@ var FolderPickerModal = class extends import_obsidian.Modal {
   }
 };
 
+// src/templater.ts
+var import_obsidian2 = require("obsidian");
+var RUN_MODE_CREATE_NEW_FROM_TEMPLATE = 0;
+function getTemplaterPlugin(app) {
+  var _a;
+  const plugins = app.plugins;
+  return (_a = plugins == null ? void 0 : plugins.plugins) == null ? void 0 : _a["templater-obsidian"];
+}
+function isTemplaterAvailable(app) {
+  const plugin = getTemplaterPlugin(app);
+  return !!(plugin == null ? void 0 : plugin.templater) && typeof plugin.templater.create_running_config === "function" && typeof plugin.templater.read_and_parse_template === "function";
+}
+function templaterFolderTemplateWillMatch(plugin, file) {
+  var _a, _b, _c, _d, _e, _f;
+  const s = plugin.settings;
+  if (!(s == null ? void 0 : s.trigger_on_file_creation)) return false;
+  if (s.trigger_on_file_creation_mode !== "folder") return false;
+  const folder = (_b = (_a = file.parent) == null ? void 0 : _a.path) != null ? _b : "/";
+  const ignored = (_d = (_c = s.ignore_folders_on_creation) == null ? void 0 : _c.some((i) => i.folder === folder)) != null ? _d : false;
+  if (ignored) return false;
+  return (_f = (_e = s.folder_templates) == null ? void 0 : _e.some((f) => f.folder === folder)) != null ? _f : false;
+}
+async function waitForFileSettle(app, file, timeoutMs = 600) {
+  var _a;
+  const startTime = Date.now();
+  let interval = 30;
+  let lastMtime = null;
+  while (Date.now() - startTime < timeoutMs) {
+    let mtime = null;
+    try {
+      const stat = await app.vault.adapter.stat(file.path);
+      mtime = (_a = stat == null ? void 0 : stat.mtime) != null ? _a : null;
+    } catch (e) {
+      return;
+    }
+    if (lastMtime !== null && mtime === lastMtime) {
+      return;
+    }
+    lastMtime = mtime;
+    await new Promise((r) => setTimeout(r, interval));
+    interval = Math.min(interval * 2, 200);
+  }
+}
+async function applyTemplater(app, noteFile, templatePath) {
+  const templatePathTrimmed = templatePath.trim();
+  if (!templatePathTrimmed) return false;
+  const plugin = getTemplaterPlugin(app);
+  if (!(plugin == null ? void 0 : plugin.templater)) return false;
+  const templater = plugin.templater;
+  if (typeof templater.create_running_config !== "function" || typeof templater.read_and_parse_template !== "function") {
+    console.warn("[NoteCalendar] Templater \u5185\u90E8 API \u4E0D\u53EF\u7528\uFF0C\u5DF2\u8DF3\u8FC7\u6A21\u677F\u5957\u7528");
+    return false;
+  }
+  const templateFile = app.vault.getAbstractFileByPath(templatePathTrimmed);
+  if (!(templateFile instanceof import_obsidian2.TFile)) {
+    new import_obsidian2.Notice(`\u6A21\u677F\u6587\u4EF6\u4E0D\u5B58\u5728\uFF0C\u5DF2\u521B\u5EFA\u7A7A\u7B14\u8BB0\uFF1A${templatePathTrimmed}`);
+    return false;
+  }
+  if (templaterFolderTemplateWillMatch(plugin, noteFile)) {
+    console.log("[NoteCalendar] Templater \u6587\u4EF6\u5939\u6A21\u677F\u5DF2\u547D\u4E2D\uFF0C\u8DF3\u8FC7\u63D2\u4EF6\u4FA7\u6A21\u677F\u5957\u7528");
+    return false;
+  }
+  try {
+    await waitForFileSettle(app, noteFile);
+    let config;
+    if (typeof templater.create_running_config === "function") {
+      config = templater.create_running_config(
+        templateFile,
+        noteFile,
+        RUN_MODE_CREATE_NEW_FROM_TEMPLATE
+      );
+    } else {
+      config = {
+        target_file: noteFile,
+        run_mode: RUN_MODE_CREATE_NEW_FROM_TEMPLATE,
+        frontmatter: {}
+      };
+    }
+    if (config.frontmatter === void 0) {
+      config.frontmatter = {};
+    }
+    const rendered = await templater.read_and_parse_template(config);
+    await app.vault.modify(noteFile, rendered);
+    return true;
+  } catch (error) {
+    console.error("[NoteCalendar] Templater \u6A21\u677F\u6E32\u67D3\u5931\u8D25:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    new import_obsidian2.Notice(`\u6A21\u677F\u6E32\u67D3\u5931\u8D25\uFF0C\u5DF2\u4FDD\u7559\u7A7A\u7B14\u8BB0\uFF1A${message}`);
+    return false;
+  }
+}
+
 // src/settings.ts
 var DEFAULT_SETTINGS = {
   startOfWeek: 0,
@@ -12044,6 +12198,12 @@ var DEFAULT_SETTINGS = {
   yearlyFolderPath: "",
   monthlyTitleFormat: "YYYY\u5E74MM\u6708",
   monthlyFolderPath: "",
+  // 各类型笔记的 Templater 模板路径（留空=创建空笔记）
+  dailyTemplatePath: "",
+  weeklyTemplatePath: "",
+  quarterlyTemplatePath: "",
+  yearlyTemplatePath: "",
+  monthlyTemplatePath: "",
   // 季度显示配置（v0.3.5 新增）
   showQuarterly: true,
   quarterlyMode: "number",
@@ -12052,7 +12212,7 @@ var DEFAULT_SETTINGS = {
   // 1-12，首个季的起始月
   quarterlyCustomNames: "\u6625\u5B63,\u590F\u5B63,\u79CB\u5B63,\u51AC\u5B63"
 };
-var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
+var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -12062,73 +12222,73 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "Note Calendar \u8BBE\u7F6E" });
     const appearanceSection = this.createSection("\u5916\u89C2");
-    new import_obsidian2.Setting(appearanceSection).setName("\u4E3B\u9898\u6A21\u5F0F").setDesc("\u9009\u62E9\u65E5\u5386\u80CC\u666F\u4E3B\u9898\u6A21\u5F0F\u3002\u8DDF\u968FObsidian\u5C06\u81EA\u52A8\u9002\u914D\u6DF1\u8272/\u6D45\u8272\u4E3B\u9898").addDropdown((dropdown) => dropdown.addOption("auto", "\u8DDF\u968FObsidian").addOption("dark", "\u6DF1\u8272").addOption("light", "\u6D45\u8272").setValue(this.plugin.settings.themeMode || "auto").onChange(async (value) => {
+    new import_obsidian3.Setting(appearanceSection).setName("\u4E3B\u9898\u6A21\u5F0F").setDesc("\u9009\u62E9\u65E5\u5386\u80CC\u666F\u4E3B\u9898\u6A21\u5F0F\u3002\u8DDF\u968FObsidian\u5C06\u81EA\u52A8\u9002\u914D\u6DF1\u8272/\u6D45\u8272\u4E3B\u9898").addDropdown((dropdown) => dropdown.addOption("auto", "\u8DDF\u968FObsidian").addOption("dark", "\u6DF1\u8272").addOption("light", "\u6D45\u8272").setValue(this.plugin.settings.themeMode || "auto").onChange(async (value) => {
       await this.plugin.updateSettings({ themeMode: value });
     }));
-    new import_obsidian2.Setting(appearanceSection).setName("\u4E00\u5468\u8D77\u59CB\u65E5").setDesc("\u9009\u62E9\u65E5\u5386\u4E00\u5468\u7684\u7B2C\u4E00\u5929\u662F\u5468\u65E5\u8FD8\u662F\u5468\u4E00").addDropdown((dropdown) => dropdown.addOption("0", "\u5468\u65E5").addOption("1", "\u5468\u4E00").setValue(String(this.plugin.settings.startOfWeek)).onChange(async (value) => {
+    new import_obsidian3.Setting(appearanceSection).setName("\u4E00\u5468\u8D77\u59CB\u65E5").setDesc("\u9009\u62E9\u65E5\u5386\u4E00\u5468\u7684\u7B2C\u4E00\u5929\u662F\u5468\u65E5\u8FD8\u662F\u5468\u4E00").addDropdown((dropdown) => dropdown.addOption("0", "\u5468\u65E5").addOption("1", "\u5468\u4E00").setValue(String(this.plugin.settings.startOfWeek)).onChange(async (value) => {
       await this.plugin.updateSettings({ startOfWeek: parseInt(value) });
     }));
-    new import_obsidian2.Setting(appearanceSection).setName("\u5468\u672B\u989C\u8272").setDesc("\u5468\u516D\u548C\u5468\u65E5\u663E\u793A\u7684\u989C\u8272").addExtraButton((button) => button.setIcon("reset").setTooltip("\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u989C\u8272").onClick(() => {
+    new import_obsidian3.Setting(appearanceSection).setName("\u5468\u672B\u989C\u8272").setDesc("\u5468\u516D\u548C\u5468\u65E5\u663E\u793A\u7684\u989C\u8272").addExtraButton((button) => button.setIcon("reset").setTooltip("\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u989C\u8272").onClick(() => {
       this.showResetConfirm("\u5468\u672B\u989C\u8272", "weekendColor", DEFAULT_SETTINGS.weekendColor);
     })).addColorPicker((colorPicker) => colorPicker.setValue(this.plugin.settings.weekendColor).onChange(async (value) => {
       await this.plugin.updateSettings({ weekendColor: value });
     }));
-    new import_obsidian2.Setting(appearanceSection).setName("\u8DDF\u968F Obsidian \u5F3A\u8C03\u8272").setDesc("\u5F00\u542F\u540E\u4E3B\u9898\u8272\u5B9E\u65F6\u8DDF\u968F Obsidian \u7684\u5F3A\u8C03\u8272\uFF08\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u5F3A\u8C03\u8272\uFF09\uFF0C\u5E76\u9690\u85CF\u4E0B\u65B9\u7684\u4E3B\u9898\u989C\u8272\u914D\u7F6E\u9879").addToggle((toggle) => toggle.setValue(this.plugin.settings.followAccentColor).onChange(async (value) => {
+    new import_obsidian3.Setting(appearanceSection).setName("\u8DDF\u968F Obsidian \u5F3A\u8C03\u8272").setDesc("\u5F00\u542F\u540E\u4E3B\u9898\u8272\u5B9E\u65F6\u8DDF\u968F Obsidian \u7684\u5F3A\u8C03\u8272\uFF08\u8BBE\u7F6E \u2192 \u5916\u89C2 \u2192 \u5F3A\u8C03\u8272\uFF09\uFF0C\u5E76\u9690\u85CF\u4E0B\u65B9\u7684\u4E3B\u9898\u989C\u8272\u914D\u7F6E\u9879").addToggle((toggle) => toggle.setValue(this.plugin.settings.followAccentColor).onChange(async (value) => {
       await this.plugin.updateSettings({ followAccentColor: value });
       this.display();
     }));
     if (!this.plugin.settings.followAccentColor) {
-      new import_obsidian2.Setting(appearanceSection).setName("\u4E3B\u9898\u989C\u8272").setDesc("\u4ECA\u5929\u3001\u9009\u4E2D\u72B6\u6001\u548C\u8282\u5047\u65E5\u7684\u663E\u793A\u989C\u8272").addExtraButton((button) => button.setIcon("reset").setTooltip("\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u989C\u8272").onClick(() => {
+      new import_obsidian3.Setting(appearanceSection).setName("\u4E3B\u9898\u989C\u8272").setDesc("\u4ECA\u5929\u3001\u9009\u4E2D\u72B6\u6001\u548C\u8282\u5047\u65E5\u7684\u663E\u793A\u989C\u8272").addExtraButton((button) => button.setIcon("reset").setTooltip("\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u989C\u8272").onClick(() => {
         this.showResetConfirm("\u4E3B\u9898\u989C\u8272", "themeColor", DEFAULT_SETTINGS.themeColor);
       })).addColorPicker((colorPicker) => colorPicker.setValue(this.plugin.settings.themeColor).onChange(async (value) => {
         await this.plugin.updateSettings({ themeColor: value });
       }));
     }
-    new import_obsidian2.Setting(appearanceSection).setName("\u5B57\u4F53").setDesc("\u9009\u62E9\u65E5\u5386\u4F7F\u7528\u7684\u5B57\u4F53").addDropdown((dropdown) => dropdown.addOption("default", "\u9ED8\u8BA4").addOption("microsoft-yahei", "\u5FAE\u8F6F\u96C5\u9ED1").addOption("simsun", "\u5B8B\u4F53").addOption("simhei", "\u9ED1\u4F53").addOption("arial", "Arial").addOption("helvetica", "Helvetica").addOption("verdana", "Verdana").addOption("tahoma", "Tahoma").addOption("segoe-ui", "Segoe UI").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
+    new import_obsidian3.Setting(appearanceSection).setName("\u5B57\u4F53").setDesc("\u9009\u62E9\u65E5\u5386\u4F7F\u7528\u7684\u5B57\u4F53").addDropdown((dropdown) => dropdown.addOption("default", "\u9ED8\u8BA4").addOption("microsoft-yahei", "\u5FAE\u8F6F\u96C5\u9ED1").addOption("simsun", "\u5B8B\u4F53").addOption("simhei", "\u9ED1\u4F53").addOption("arial", "Arial").addOption("helvetica", "Helvetica").addOption("verdana", "Verdana").addOption("tahoma", "Tahoma").addOption("segoe-ui", "Segoe UI").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
       await this.plugin.updateSettings({ fontFamily: value });
     }));
-    new import_obsidian2.Setting(appearanceSection).setName("\u5B57\u53F7").setDesc("\u8BBE\u7F6E\u65E5\u5386\u6587\u5B57\u5927\u5C0F\uFF0810-20px\uFF09").addSlider((slider) => slider.setLimits(10, 20, 1).setValue(this.plugin.settings.fontSize).setDynamicTooltip().onChange(async (value) => {
+    new import_obsidian3.Setting(appearanceSection).setName("\u5B57\u53F7").setDesc("\u8BBE\u7F6E\u65E5\u5386\u6587\u5B57\u5927\u5C0F\uFF0810-20px\uFF09").addSlider((slider) => slider.setLimits(10, 20, 1).setValue(this.plugin.settings.fontSize).setDynamicTooltip().onChange(async (value) => {
       await this.plugin.updateSettings({ fontSize: Math.round(value) });
     }));
     const displaySection = this.createSection("\u663E\u793A");
-    new import_obsidian2.Setting(displaySection).setName("\u663E\u793A\u516C\u5386\u5047\u65E5").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u516C\u5386\u5047\u65E5").addToggle((toggle) => {
+    new import_obsidian3.Setting(displaySection).setName("\u663E\u793A\u516C\u5386\u5047\u65E5").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u516C\u5386\u5047\u65E5").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showSolarFestivals).onChange(async (value) => {
         await this.plugin.updateSettings({ showSolarFestivals: value });
       });
     });
-    new import_obsidian2.Setting(displaySection).setName("\u663E\u793A\u8C03\u4F11").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u8C03\u4F11").addToggle((toggle) => {
+    new import_obsidian3.Setting(displaySection).setName("\u663E\u793A\u8C03\u4F11").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u8C03\u4F11").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showHolidayMarker).onChange(async (value) => {
         await this.plugin.updateSettings({ showHolidayMarker: value });
       });
     });
-    new import_obsidian2.Setting(displaySection).setName("\u663E\u793A\u519C\u5386\u65E5\u671F").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u519C\u5386\u65E5\u671F\u3001\u6708\u4EFD\u3001\u5E74\u4EFD").addToggle((toggle) => {
+    new import_obsidian3.Setting(displaySection).setName("\u663E\u793A\u519C\u5386\u65E5\u671F").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u519C\u5386\u65E5\u671F\u3001\u6708\u4EFD\u3001\u5E74\u4EFD").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showLunarDate).onChange(async (value) => {
         await this.plugin.updateSettings({ showLunarDate: value });
       });
     });
-    new import_obsidian2.Setting(displaySection).setName("\u663E\u793A\u519C\u5386\u5047\u65E5").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u519C\u5386\u5047\u65E5").addToggle((toggle) => {
+    new import_obsidian3.Setting(displaySection).setName("\u663E\u793A\u519C\u5386\u5047\u65E5").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u519C\u5386\u5047\u65E5").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showLunarFestivals).onChange(async (value) => {
         await this.plugin.updateSettings({ showLunarFestivals: value });
       });
     });
-    new import_obsidian2.Setting(displaySection).setName("\u663E\u793A\u8282\u6C14").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u8282\u6C14").addToggle((toggle) => {
+    new import_obsidian3.Setting(displaySection).setName("\u663E\u793A\u8282\u6C14").setDesc("\u5173\u95ED\u540E\u4E0D\u518D\u663E\u793A\u8282\u6C14").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showJieQi).onChange(async (value) => {
         await this.plugin.updateSettings({ showJieQi: value });
       });
     });
-    new import_obsidian2.Setting(displaySection).setName("\u663E\u793A\u5B63\u5EA6").setDesc("\u5728\u65E5\u5386\u6807\u9898\u4E2D\u663E\u793A\u5F53\u524D\u5B63\u5EA6").addToggle((toggle) => {
+    new import_obsidian3.Setting(displaySection).setName("\u663E\u793A\u5B63\u5EA6").setDesc("\u5728\u65E5\u5386\u6807\u9898\u4E2D\u663E\u793A\u5F53\u524D\u5B63\u5EA6").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showQuarterly).onChange(async (value) => {
         await this.plugin.updateSettings({ showQuarterly: value });
       });
     });
     const quarterSection = this.createSection("\u5B63\u5EA6\u663E\u793A\u8BBE\u7F6E");
     const currentMode = this.plugin.settings.quarterlyMode || "number";
-    new import_obsidian2.Setting(quarterSection).setName("\u5B63\u5EA6\u663E\u793A\u6A21\u5F0F").setDesc("\u9009\u62E9\u5B63\u5EA6\u7684\u663E\u793A\u65B9\u5F0F").addDropdown((dropdown) => dropdown.addOption("number", "\u6570\u5B57\uFF081\u5B63\u5EA6\u30012\u5B63\u5EA6\u2026\uFF09").addOption("season", "\u6625\u590F\u79CB\u51AC\uFF08\u6625\u5B63\u3001\u590F\u5B63\u2026\uFF09").addOption("custom", "\u81EA\u5B9A\u4E49\u547D\u540D").setValue(currentMode).onChange(async (value) => {
+    new import_obsidian3.Setting(quarterSection).setName("\u5B63\u5EA6\u663E\u793A\u6A21\u5F0F").setDesc("\u9009\u62E9\u5B63\u5EA6\u7684\u663E\u793A\u65B9\u5F0F").addDropdown((dropdown) => dropdown.addOption("number", "\u6570\u5B57\uFF081\u5B63\u5EA6\u30012\u5B63\u5EA6\u2026\uFF09").addOption("season", "\u6625\u590F\u79CB\u51AC\uFF08\u6625\u5B63\u3001\u590F\u5B63\u2026\uFF09").addOption("custom", "\u81EA\u5B9A\u4E49\u547D\u540D").setValue(currentMode).onChange(async (value) => {
       await this.plugin.updateSettings({ quarterlyMode: value });
       this.display();
     }));
     if (currentMode === "season" || currentMode === "custom") {
-      new import_obsidian2.Setting(quarterSection).setName("\u9996\u5B63\u8D77\u59CB\u6708\u4EFD").setDesc("\u8BBE\u7F6E\u7B2C\u4E00\u4E2A\u5B63\u5EA6\u4ECE\u54EA\u4E2A\u6708\u5F00\u59CB").addDropdown((dropdown) => {
+      new import_obsidian3.Setting(quarterSection).setName("\u9996\u5B63\u8D77\u59CB\u6708\u4EFD").setDesc("\u8BBE\u7F6E\u7B2C\u4E00\u4E2A\u5B63\u5EA6\u4ECE\u54EA\u4E2A\u6708\u5F00\u59CB").addDropdown((dropdown) => {
         for (let i = 1; i <= 12; i++) {
           dropdown.addOption(String(i), `${i}\u6708`);
         }
@@ -12138,81 +12298,86 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
       });
     }
     if (currentMode === "custom") {
-      new import_obsidian2.Setting(quarterSection).setName("\u81EA\u5B9A\u4E49\u5B63\u5EA6\u540D\u79F0").setDesc("\u7528\u9017\u53F7\u5206\u9694\u56DB\u4E2A\u5B63\u5EA6\u7684\u540D\u79F0\uFF0C\u9700\u6070\u597D4\u4E2A\u3002\u4F8B\u5982\uFF1AQ1,Q2,Q3,Q4").addText((text) => text.setPlaceholder("\u6625\u5B63,\u590F\u5B63,\u79CB\u5B63,\u51AC\u5B63").setValue(this.plugin.settings.quarterlyCustomNames).onChange(async (value) => {
+      new import_obsidian3.Setting(quarterSection).setName("\u81EA\u5B9A\u4E49\u5B63\u5EA6\u540D\u79F0").setDesc("\u7528\u9017\u53F7\u5206\u9694\u56DB\u4E2A\u5B63\u5EA6\u7684\u540D\u79F0\uFF0C\u9700\u6070\u597D4\u4E2A\u3002\u4F8B\u5982\uFF1AQ1,Q2,Q3,Q4").addText((text) => text.setPlaceholder("\u6625\u5B63,\u590F\u5B63,\u79CB\u5B63,\u51AC\u5B63").setValue(this.plugin.settings.quarterlyCustomNames).onChange(async (value) => {
         const count = value.split(",").filter((s) => s.trim().length > 0).length;
         if (count > 0 && count !== 4) {
-          new import_obsidian2.Notice(`\u5F53\u524D\u8F93\u5165\u4E86 ${count} \u4E2A\u540D\u79F0\uFF0C\u5B63\u5EA6\u9700\u8981\u6070\u597D 4 \u4E2A\uFF0C\u4E0D\u8DB3\u90E8\u5206\u5C06\u81EA\u52A8\u8865\u9F50`);
+          new import_obsidian3.Notice(`\u5F53\u524D\u8F93\u5165\u4E86 ${count} \u4E2A\u540D\u79F0\uFF0C\u5B63\u5EA6\u9700\u8981\u6070\u597D 4 \u4E2A\uFF0C\u4E0D\u8DB3\u90E8\u5206\u5C06\u81EA\u52A8\u8865\u9F50`);
         }
         await this.plugin.updateSettings({ quarterlyCustomNames: value });
       }));
     }
     const dailySection = this.createSection("\u65E5\u8BB0\u8BBE\u7F6E");
-    new import_obsidian2.Setting(dailySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001MM\uFF08\u6708\u4EFD\uFF09\u3001DD\uFF08\u65E5\u671F\uFF09").addText((text) => text.setPlaceholder("YYYY-MM-DD").setValue(this.plugin.settings.dailyTitleFormat).onChange(async (value) => {
+    new import_obsidian3.Setting(dailySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001MM\uFF08\u6708\u4EFD\uFF09\u3001DD\uFF08\u65E5\u671F\uFF09").addText((text) => text.setPlaceholder("YYYY-MM-DD").setValue(this.plugin.settings.dailyTitleFormat).onChange(async (value) => {
       await this.plugin.updateSettings({ dailyTitleFormat: value });
     }));
     let dailyFolderInput = null;
-    new import_obsidian2.Setting(dailySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u65E5\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
+    new import_obsidian3.Setting(dailySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u65E5\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
       dailyFolderInput = text.inputEl;
       text.setPlaceholder("\u4F8B\u5982: notes/\u65E5\u8BB0").setValue(this.plugin.settings.dailyFolderPath).onChange(async (value) => {
         await this.plugin.updateSettings({ dailyFolderPath: value });
       });
     }).addExtraButton((button) => button.setIcon("folder").setTooltip("\u9009\u62E9\u6587\u4EF6\u5939").onClick(() => this.showFolderPicker("dailyFolderPath", dailyFolderInput, "\u9009\u62E9\u65E5\u8BB0\u9ED8\u8BA4\u6587\u4EF6\u5939")));
+    this.createTemplateSetting(dailySection, "\u65E5\u8BB0", "dailyTemplatePath");
     const weeklySection = this.createSection("\u5468\u8BB0\u8BBE\u7F6E");
-    new import_obsidian2.Setting(weeklySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001{week}\uFF08\u5468\u6570\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY-{week}\u5468").addText((text) => text.setPlaceholder("YYYY-{week}\u5468").setValue(this.plugin.settings.weeklyTitleFormat).onChange(async (value) => {
+    new import_obsidian3.Setting(weeklySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001{week}\uFF08\u5468\u6570\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY-{week}\u5468").addText((text) => text.setPlaceholder("YYYY-{week}\u5468").setValue(this.plugin.settings.weeklyTitleFormat).onChange(async (value) => {
       await this.plugin.updateSettings({ weeklyTitleFormat: value });
     }));
     let weeklyFolderInput = null;
-    new import_obsidian2.Setting(weeklySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u5468\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
+    new import_obsidian3.Setting(weeklySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u5468\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
       weeklyFolderInput = text.inputEl;
       text.setPlaceholder("\u4F8B\u5982: notes/\u5468\u8BB0").setValue(this.plugin.settings.weeklyFolderPath).onChange(async (value) => {
         await this.plugin.updateSettings({ weeklyFolderPath: value });
       });
     }).addExtraButton((button) => button.setIcon("folder").setTooltip("\u9009\u62E9\u6587\u4EF6\u5939").onClick(() => this.showFolderPicker("weeklyFolderPath", weeklyFolderInput, "\u9009\u62E9\u5468\u8BB0\u9ED8\u8BA4\u6587\u4EF6\u5939")));
+    this.createTemplateSetting(weeklySection, "\u5468\u8BB0", "weeklyTemplatePath");
     const quarterlySection = this.createSection("\u5B63\u5EA6\u7B14\u8BB0\u8BBE\u7F6E");
-    new import_obsidian2.Setting(quarterlySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001{quarter}\uFF08\u5B63\u5EA6\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY\u5E74-{quarter}\u5B63\u5EA6").addText((text) => text.setPlaceholder("YYYY\u5E74-{quarter}\u5B63\u5EA6").setValue(this.plugin.settings.quarterlyTitleFormat).onChange(async (value) => {
+    new import_obsidian3.Setting(quarterlySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001{quarter}\uFF08\u5B63\u5EA6\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY\u5E74-{quarter}\u5B63\u5EA6").addText((text) => text.setPlaceholder("YYYY\u5E74-{quarter}\u5B63\u5EA6").setValue(this.plugin.settings.quarterlyTitleFormat).onChange(async (value) => {
       await this.plugin.updateSettings({ quarterlyTitleFormat: value });
     }));
     let quarterlyFolderInput = null;
-    new import_obsidian2.Setting(quarterlySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u5B63\u5EA6\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
+    new import_obsidian3.Setting(quarterlySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u5B63\u5EA6\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
       quarterlyFolderInput = text.inputEl;
       text.setPlaceholder("\u4F8B\u5982: notes/\u5B63\u5EA6").setValue(this.plugin.settings.quarterlyFolderPath).onChange(async (value) => {
         await this.plugin.updateSettings({ quarterlyFolderPath: value });
       });
     }).addExtraButton((button) => button.setIcon("folder").setTooltip("\u9009\u62E9\u6587\u4EF6\u5939").onClick(() => this.showFolderPicker("quarterlyFolderPath", quarterlyFolderInput, "\u9009\u62E9\u5B63\u5EA6\u7B14\u8BB0\u9ED8\u8BA4\u6587\u4EF6\u5939")));
+    this.createTemplateSetting(quarterlySection, "\u5B63\u5EA6\u7B14\u8BB0", "quarterlyTemplatePath");
     const monthlySection = this.createSection("\u6708\u5EA6\u7B14\u8BB0\u8BBE\u7F6E");
-    new import_obsidian2.Setting(monthlySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001MM\uFF08\u6708\u4EFD\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY\u5E74MM\u6708").addText((text) => text.setPlaceholder("YYYY\u5E74MM\u6708").setValue(this.plugin.settings.monthlyTitleFormat).onChange(async (value) => {
+    new import_obsidian3.Setting(monthlySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\u3001MM\uFF08\u6708\u4EFD\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY\u5E74MM\u6708").addText((text) => text.setPlaceholder("YYYY\u5E74MM\u6708").setValue(this.plugin.settings.monthlyTitleFormat).onChange(async (value) => {
       await this.plugin.updateSettings({ monthlyTitleFormat: value });
     }));
     let monthlyFolderInput = null;
-    new import_obsidian2.Setting(monthlySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u6708\u5EA6\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
+    new import_obsidian3.Setting(monthlySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u6708\u5EA6\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
       monthlyFolderInput = text.inputEl;
       text.setPlaceholder("\u4F8B\u5982: notes/\u6708\u5EA6").setValue(this.plugin.settings.monthlyFolderPath).onChange(async (value) => {
         await this.plugin.updateSettings({ monthlyFolderPath: value });
       });
     }).addExtraButton((button) => button.setIcon("folder").setTooltip("\u9009\u62E9\u6587\u4EF6\u5939").onClick(() => this.showFolderPicker("monthlyFolderPath", monthlyFolderInput, "\u9009\u62E9\u6708\u5EA6\u7B14\u8BB0\u9ED8\u8BA4\u6587\u4EF6\u5939")));
+    this.createTemplateSetting(monthlySection, "\u6708\u5EA6\u7B14\u8BB0", "monthlyTemplatePath");
     const yearlySection = this.createSection("\u5E74\u5EA6\u7B14\u8BB0\u8BBE\u7F6E");
-    new import_obsidian2.Setting(yearlySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY").addText((text) => text.setPlaceholder("YYYY").setValue(this.plugin.settings.yearlyTitleFormat).onChange(async (value) => {
+    new import_obsidian3.Setting(yearlySection).setName("\u6807\u9898\u683C\u5F0F").setDesc("\u652F\u6301 YYYY\uFF08\u5E74\u4EFD\uFF09\uFF0C\u4F8B\u5982\uFF1AYYYY").addText((text) => text.setPlaceholder("YYYY").setValue(this.plugin.settings.yearlyTitleFormat).onChange(async (value) => {
       await this.plugin.updateSettings({ yearlyTitleFormat: value });
     }));
     let yearlyFolderInput = null;
-    new import_obsidian2.Setting(yearlySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u5E74\u5EA6\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
+    new import_obsidian3.Setting(yearlySection).setName("\u9ED8\u8BA4\u6587\u4EF6\u5939\u8DEF\u5F84").setDesc("\u521B\u5EFA\u5E74\u5EA6\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\uFF08\u7559\u7A7A\u4E3A\u6839\u76EE\u5F55\uFF09").addText((text) => {
       yearlyFolderInput = text.inputEl;
       text.setPlaceholder("\u4F8B\u5982: notes/\u5E74\u5EA6").setValue(this.plugin.settings.yearlyFolderPath).onChange(async (value) => {
         await this.plugin.updateSettings({ yearlyFolderPath: value });
       });
     }).addExtraButton((button) => button.setIcon("folder").setTooltip("\u9009\u62E9\u6587\u4EF6\u5939").onClick(() => this.showFolderPicker("yearlyFolderPath", yearlyFolderInput, "\u9009\u62E9\u5E74\u5EA6\u7B14\u8BB0\u9ED8\u8BA4\u6587\u4EF6\u5939")));
+    this.createTemplateSetting(yearlySection, "\u5E74\u5EA6\u7B14\u8BB0", "yearlyTemplatePath");
     const scanSection = this.createSection("\u7B14\u8BB0\u626B\u63CF");
     let noteFolderInput = null;
-    new import_obsidian2.Setting(scanSection).setName("\u626B\u63CF\u76EE\u5F55").setDesc("\u8BBE\u7F6E\u53EA\u626B\u63CF\u8BE5\u76EE\u5F55\u4E0B\u7684\u7B14\u8BB0\u6587\u4EF6\u7528\u4E8E\u65E5\u5386\u663E\u793A\uFF0C\u7559\u7A7A\u5219\u626B\u63CF\u6574\u4E2A\u4ED3\u5E93\u3002\u6B64\u8BBE\u7F6E\u4EC5\u5F71\u54CD\u54EA\u4E9B\u7B14\u8BB0\u4F1A\u88AB\u663E\u793A\u5728\u65E5\u5386\u4E0A\uFF0C\u4E0E\u521B\u5EFA\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\u65E0\u5173\u3002").addText((text) => {
+    new import_obsidian3.Setting(scanSection).setName("\u626B\u63CF\u76EE\u5F55").setDesc("\u8BBE\u7F6E\u53EA\u626B\u63CF\u8BE5\u76EE\u5F55\u4E0B\u7684\u7B14\u8BB0\u6587\u4EF6\u7528\u4E8E\u65E5\u5386\u663E\u793A\uFF0C\u7559\u7A7A\u5219\u626B\u63CF\u6574\u4E2A\u4ED3\u5E93\u3002\u6B64\u8BBE\u7F6E\u4EC5\u5F71\u54CD\u54EA\u4E9B\u7B14\u8BB0\u4F1A\u88AB\u663E\u793A\u5728\u65E5\u5386\u4E0A\uFF0C\u4E0E\u521B\u5EFA\u7B14\u8BB0\u65F6\u7684\u9ED8\u8BA4\u4FDD\u5B58\u8DEF\u5F84\u65E0\u5173\u3002").addText((text) => {
       noteFolderInput = text.inputEl;
       text.setPlaceholder("\u7559\u7A7A\u626B\u63CF\u5168\u90E8").setValue(this.plugin.settings.noteFolderPath).onChange(async (value) => {
         await this.plugin.updateSettings({ noteFolderPath: value });
       });
     }).addExtraButton((button) => button.setIcon("folder").setTooltip("\u9009\u62E9\u6587\u4EF6\u5939").onClick(() => this.showFolderPicker("noteFolderPath", noteFolderInput, "\u9009\u62E9\u626B\u63CF\u76EE\u5F55")));
-    new import_obsidian2.Setting(scanSection).setName("\u624B\u52A8\u626B\u63CF").setDesc("\u70B9\u51FB\u6309\u94AE\u7ACB\u5373\u91CD\u65B0\u626B\u63CF\u6240\u6709\u7B14\u8BB0").addButton((button) => button.setButtonText("\u626B\u63CF").onClick(async () => {
+    new import_obsidian3.Setting(scanSection).setName("\u624B\u52A8\u626B\u63CF").setDesc("\u70B9\u51FB\u6309\u94AE\u7ACB\u5373\u91CD\u65B0\u626B\u63CF\u6240\u6709\u7B14\u8BB0").addButton((button) => button.setButtonText("\u626B\u63CF").onClick(async () => {
       await this.plugin.scanNotes();
     }));
-    new import_obsidian2.Setting(containerEl).setClass("calendar-reset-all-btn").setName("\u6062\u590D\u9ED8\u8BA4\u8BBE\u7F6E").setDesc("\u5C06\u6240\u6709\u8BBE\u7F6E\u6062\u590D\u4E3A\u9ED8\u8BA4\u503C\uFF08\u4E3B\u9898\u3001\u663E\u793A\u3001\u5B63\u5EA6\u3001\u7B14\u8BB0\u8DEF\u5F84\u4E0E\u683C\u5F0F\u7B49\u5168\u90E8\u914D\u7F6E\uFF09").addButton((button) => button.setButtonText("\u6062\u590D\u9ED8\u8BA4").setWarning().onClick(() => this.showResetAllConfirm()));
+    new import_obsidian3.Setting(containerEl).setClass("calendar-reset-all-btn").setName("\u6062\u590D\u9ED8\u8BA4\u8BBE\u7F6E").setDesc("\u5C06\u6240\u6709\u8BBE\u7F6E\u6062\u590D\u4E3A\u9ED8\u8BA4\u503C\uFF08\u4E3B\u9898\u3001\u663E\u793A\u3001\u5B63\u5EA6\u3001\u7B14\u8BB0\u8DEF\u5F84\u4E0E\u683C\u5F0F\u7B49\u5168\u90E8\u914D\u7F6E\uFF09").addButton((button) => button.setButtonText("\u6062\u590D\u9ED8\u8BA4").setWarning().onClick(() => this.showResetAllConfirm()));
   }
   /**
    * 创建可收起的设置分组
@@ -12249,13 +12414,62 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
     }).open();
   }
   /**
+   * 创建"模板文件"设置项（五类笔记设置组共用）
+   * @param {HTMLElement} section 所属分组容器
+   * @param {string} label 笔记类型名称（用于文案）
+   * @param {TemplatePathKey} key 模板路径设置键
+   */
+  createTemplateSetting(section, label, key) {
+    const templaterReady = isTemplaterAvailable(this.app);
+    let templateInput = null;
+    new import_obsidian3.Setting(section).setName("\u6A21\u677F\u6587\u4EF6").setDesc(
+      `\u521B\u5EFA${label}\u65F6\u81EA\u52A8\u5957\u7528 Templater \u6A21\u677F\uFF0C\u7559\u7A7A\u5219\u521B\u5EFA\u7A7A\u7B14\u8BB0\u3002
+` + (templaterReady ? "" : "\u5F53\u524D\u672A\u68C0\u6D4B\u5230\u5DF2\u542F\u7528\u7684 Templater \u63D2\u4EF6\uFF0C\u586B\u5199\u540E\u6682\u4E0D\u751F\u6548\u3002\n") + '\u5EFA\u8BAE\u907F\u514D\u540C\u65F6\u542F\u7528 Templater \u7684"\u6587\u4EF6\u5939\u6A21\u677F"\u6307\u5411\u540C\u4E00\u76EE\u5F55\uFF0C\u5426\u5219\u63D2\u4EF6\u4F1A\u81EA\u52A8\u8DF3\u8FC7\u5957\u7528\u4EE5\u907F\u514D\u5185\u5BB9\u91CD\u590D\u3002'
+    ).addText((text) => {
+      templateInput = text.inputEl;
+      text.setPlaceholder("\u4F8B\u5982: templates/\u6A21\u677F").setValue(this.plugin.settings[key]).onChange(async (value) => {
+        await this.plugin.updateSettings({ [key]: value });
+        this.updateTemplateInputState(templateInput, value);
+      });
+    }).addExtraButton((button) => button.setIcon("file").setTooltip("\u9009\u62E9\u6A21\u677F\u6587\u4EF6").onClick(() => this.showFilePicker(key, templateInput, `\u9009\u62E9${label}\u6A21\u677F\u6587\u4EF6`)));
+    this.updateTemplateInputState(templateInput, this.plugin.settings[key]);
+  }
+  /**
+   * 模板路径存在性校验：非空且文件不存在时输入框显示红色边框
+   * @param {HTMLInputElement} inputEl 模板路径输入框
+   * @param {string} path 当前路径值
+   */
+  updateTemplateInputState(inputEl, path) {
+    const trimmed = path.trim();
+    const invalid = trimmed !== "" && !(this.app.vault.getAbstractFileByPath(trimmed) instanceof import_obsidian3.TFile);
+    inputEl.style.borderColor = invalid ? "#e57373" : "";
+  }
+  /**
+   * 打开模板文件选择弹窗（file 模式，树中可选 .md 文件），选择后自动填充并保存
+   * @param {TemplatePathKey} key 设置键名
+   * @param {HTMLInputElement} inputEl 配置项对应的文本输入框
+   * @param {string} title 弹窗标题
+   */
+  showFilePicker(key, inputEl, title) {
+    new FolderPickerModal(this.app, {
+      title,
+      initialPath: this.plugin.settings[key],
+      mode: "file",
+      onChoose: async (path) => {
+        inputEl.value = path;
+        await this.plugin.updateSettings({ [key]: path });
+        this.updateTemplateInputState(inputEl, path);
+      }
+    }).open();
+  }
+  /**
    * 显示重置确认弹窗
    * @param {string} label 设置项名称，如"周末颜色"
    * @param {string} key 设置键名
    * @param {string} defaultValue 默认值
    */
   showResetConfirm(label, key, defaultValue) {
-    const modal = new import_obsidian2.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.textContent = `\u91CD\u7F6E${label}`;
     const content = modal.contentEl;
     content.style.display = "flex";
@@ -12291,7 +12505,7 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
       await this.plugin.updateSettings({ [key]: defaultValue });
       this.display();
       modal.close();
-      new import_obsidian2.Notice(`${label}\u5DF2\u91CD\u7F6E\u4E3A\u9ED8\u8BA4`);
+      new import_obsidian3.Notice(`${label}\u5DF2\u91CD\u7F6E\u4E3A\u9ED8\u8BA4`);
     };
     buttonContainer.appendChild(confirmBtn);
     content.appendChild(buttonContainer);
@@ -12301,7 +12515,7 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
    * 显示"恢复全部默认"确认弹窗
    */
   showResetAllConfirm() {
-    const modal = new import_obsidian2.Modal(this.app);
+    const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.textContent = "\u6062\u590D\u9ED8\u8BA4\u8BBE\u7F6E";
     const content = modal.contentEl;
     content.style.display = "flex";
@@ -12337,7 +12551,7 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
       await this.plugin.updateSettings({ ...DEFAULT_SETTINGS });
       this.display();
       modal.close();
-      new import_obsidian2.Notice("\u6240\u6709\u8BBE\u7F6E\u5DF2\u6062\u590D\u4E3A\u9ED8\u8BA4");
+      new import_obsidian3.Notice("\u6240\u6709\u8BBE\u7F6E\u5DF2\u6062\u590D\u4E3A\u9ED8\u8BA4");
     };
     buttonContainer.appendChild(confirmBtn);
     content.appendChild(buttonContainer);
@@ -12349,7 +12563,7 @@ var CalendarSettingTab = class extends import_obsidian2.PluginSettingTab {
 var VIEW_TYPE_CALENDAR = "note-calendar-view";
 
 // src/view.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 var import_lunar_javascript = __toESM(require_lunar_javascript());
 
 // src/model.ts
@@ -12592,7 +12806,7 @@ var CalendarModel = class {
 };
 
 // src/view.ts
-var CalendarView = class extends import_obsidian3.ItemView {
+var CalendarView = class extends import_obsidian4.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -13106,7 +13320,7 @@ var CalendarView = class extends import_obsidian3.ItemView {
         defaultFolder = this.model.yearlyFolderPath || "";
         break;
     }
-    const modal = new import_obsidian3.Modal(this.app);
+    const modal = new import_obsidian4.Modal(this.app);
     modal.titleEl.textContent = type === "daily" ? "\u521B\u5EFA\u65B0\u7B14\u8BB0" : type === "weekly" ? "\u521B\u5EFA\u5468\u5468\u8BB0" : type === "monthly" ? "\u521B\u5EFA\u6708\u5EA6\u7B14\u8BB0" : type === "quarterly" ? "\u521B\u5EFA\u5B63\u5EA6\u7B14\u8BB0" : "\u521B\u5EFA\u5E74\u5EA6\u7B14\u8BB0";
     const form = document.createElement("form");
     form.style.display = "flex";
@@ -13402,7 +13616,7 @@ var CalendarView = class extends import_obsidian3.ItemView {
       const title = titleInput.value.trim();
       const folderPath = folderInput.value.trim();
       if (!title) {
-        new import_obsidian3.Notice("\u7B14\u8BB0\u6807\u9898\u4E0D\u80FD\u4E3A\u7A7A");
+        new import_obsidian4.Notice("\u7B14\u8BB0\u6807\u9898\u4E0D\u80FD\u4E3A\u7A7A");
         return;
       }
       await this.createNote(title, folderPath, type);
@@ -13431,7 +13645,7 @@ var CalendarView = class extends import_obsidian3.ItemView {
       }
       const existingFile = this.app.vault.getAbstractFileByPath(filePath);
       if (existingFile) {
-        new import_obsidian3.Notice("\u8BE5\u7B14\u8BB0\u5DF2\u5B58\u5728");
+        new import_obsidian4.Notice("\u8BE5\u7B14\u8BB0\u5DF2\u5B58\u5728");
         return;
       }
       if (folderPath) {
@@ -13446,12 +13660,36 @@ var CalendarView = class extends import_obsidian3.ItemView {
           }
         }
       }
-      await this.app.vault.create(filePath, "");
-      new import_obsidian3.Notice("\u7B14\u8BB0\u521B\u5EFA\u6210\u529F");
+      const createdFile = await this.app.vault.create(filePath, "");
+      const templatePath = this.getTemplatePathForType(type);
+      if (templatePath) {
+        await applyTemplater(this.plugin.app, createdFile, templatePath);
+      }
+      new import_obsidian4.Notice("\u7B14\u8BB0\u521B\u5EFA\u6210\u529F");
       this.plugin.scanNotes();
     } catch (error) {
       console.error("[NoteCalendar] \u521B\u5EFA\u7B14\u8BB0\u5931\u8D25:", error);
-      new import_obsidian3.Notice("\u521B\u5EFA\u7B14\u8BB0\u5931\u8D25");
+      new import_obsidian4.Notice("\u521B\u5EFA\u7B14\u8BB0\u5931\u8D25");
+    }
+  }
+  /**
+   * 获取指定笔记类型配置的 Templater 模板路径（留空表示未配置）
+   */
+  getTemplatePathForType(type) {
+    const settings = this.plugin.settings;
+    switch (type) {
+      case "daily":
+        return settings.dailyTemplatePath;
+      case "weekly":
+        return settings.weeklyTemplatePath;
+      case "monthly":
+        return settings.monthlyTemplatePath;
+      case "quarterly":
+        return settings.quarterlyTemplatePath;
+      case "yearly":
+        return settings.yearlyTemplatePath;
+      default:
+        return "";
     }
   }
   /**
@@ -13585,7 +13823,7 @@ var CalendarView = class extends import_obsidian3.ItemView {
 };
 
 // src/main.ts
-var NoteCalendarPlugin = class extends import_obsidian4.Plugin {
+var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerView(

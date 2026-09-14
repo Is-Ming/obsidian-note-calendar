@@ -13,7 +13,7 @@ The following features are planned for future iterations (in no particular order
 - [ ] Multi-view support: switch between month, week, and year views
 - [ ] Template support when creating notes:
     - [ ] Support Obsidian templates
-    - [ ] Support Templater plugin templates
+    - [x] Support Templater plugin templates
 - [ ] Task calendar integration
     - [ ] Support Tasks plugin
 - [ ] Internationalization (i18n)
@@ -70,6 +70,8 @@ An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holid
 
 5. **Color Reset** — Theme color and weekend color are customizable and can be reset to defaults with one click.
 
+6. **Template Support (optional)** — Integrates with the Templater plugin to auto-apply templates when creating notes. Not installing Templater does not affect any existing feature.
+
 ## Plugin Settings
 
 ### Appearance
@@ -89,6 +91,7 @@ An Obsidian calendar plugin that displays Gregorian dates, lunar calendar, holid
 ### Note Type Settings (Daily / Weekly / Monthly / Quarterly / Yearly)
 - Each type has its own **title format** (supports YYYY / MM / DD / {week} / {quarter}, etc.)
 - Each type has its own **default folder path**, with a 📁 button next to it to pick a folder in a dialog and auto-fill
+- Each type has its own **template file** (requires the Templater plugin, see "Template Support" below), with a button to pick a file in a dialog. The input border turns red when the path is invalid
 
 ### Note Scanning
 - **Scan Directory**: Limit scanning to a subdirectory (leave blank for whole vault). Independent from note creation paths. Supports 📁 folder picker.
@@ -107,6 +110,34 @@ Buttons on the note list header: `[+ 周 月 季 年]` — click to create daily
 ### Note Management
 - Auto-refresh on file create/modify/rename/delete
 - Click a note title to open the corresponding file
+
+### Template Support (Templater, optional)
+
+This plugin optionally integrates with Templater: templates are auto-applied when creating daily/weekly/monthly/quarterly/yearly notes. **Not installing Templater does not affect any existing feature.**
+
+**Prerequisite**: Install and enable the [Templater](https://github.com/SilentVoid13/Templater) community plugin.
+
+**Setup**:
+
+1. Create a template file using Templater syntax (a regular .md file; it does not need to live inside Templater's template folder), e.g. `templates/daily.md`:
+
+   ```markdown
+   ---
+   created: <% tp.date.now("YYYY-MM-DD HH:mm") %>
+   type: daily
+   ---
+
+   # <% tp.file.title %>
+   ```
+
+2. Open this plugin's settings → Daily Note Settings → **Template File**, and enter the file path (or click the button next to it to pick the file in a dialog)
+3. Click `+` on the calendar's note list to create a note — its content will be the rendered template
+
+**Behavior notes**:
+- Leaving the template path blank = create an empty note (default behavior, same as when Templater is not installed)
+- `<% tp.file.title %>` is replaced with the final title confirmed in the creation dialog
+- If the template file is missing or rendering fails: an empty note is kept and a notice is shown; the creation flow is never interrupted
+- If you enable Templater's "Folder Templates" pointing at the same folder, this plugin automatically skips its own template application to avoid duplicated content (recommended to configure only one side)
 
 ## Installation Guide
 

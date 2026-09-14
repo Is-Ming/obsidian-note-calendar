@@ -10,6 +10,8 @@ export interface FolderPickerOptions {
   initialPath?: string;
   /** 选择文件夹后的回调（选择后自动关闭弹窗），path 为空字符串表示根目录 */
   onChoose: (path: string) => void;
+  /** 选择模式：folder=仅文件夹（默认），file=可选 .md 文件（用于模板文件选择） */
+  mode?: 'folder' | 'file';
 }
 
 /**
@@ -19,15 +21,20 @@ interface FolderNode {
   name: string;
   path: string;
   children: Map<string, FolderNode>;
+  /** 是否为文件节点（file 模式下 .md 文件挂载为叶子节点） */
+  isFile?: boolean;
 }
 
 /**
  * 文件夹选择弹窗
  * 交互逻辑与创建笔记弹窗中的文件夹选择器一致（4.4）：
  * - 空输入时树状懒加载，可展开/收起子文件夹
- * - 输入时自动筛选（匹配名称中包含输入内容的文件夹）
+ * - 输入时自动筛选（匹配路径中包含输入内容的项）
  * - 支持键盘上下键导航、Enter 确认、Esc 关闭
  * - 点击某个文件夹后自动回调并关闭弹窗
+ *
+ * file 模式（模板文件选择）：树中同时展示 .md 文件，点击文件即选择；
+ * 点击文件夹仅展开/收起，不作为选择结果
  */
 export class FolderPickerModal extends Modal {
   private options: FolderPickerOptions;
@@ -35,11 +42,19 @@ export class FolderPickerModal extends Modal {
   private list!: HTMLDivElement;
   private expandedPaths = new Set<string>();
   private allFolderPaths: string[] | null = null;
+  private allFilePaths: string[] | null = null;
   private activeIndex = -1;
 
   constructor(app: App, options: FolderPickerOptions) {
     super(app);
     this.options = options;
+  }
+
+  /**
+   * 是否为文件选择模式
+   */
+  private isFileMode(): boolean {
+    return this.options.mode === 'file';
   }
 
   onOpen(): void {
@@ -59,7 +74,9 @@ export class FolderPickerModal extends Modal {
     this.input = document.createElement('input');
     this.input.type = 'text';
     this.input.value = this.options.initialPath || '';
-    this.input.placeholder = '输入筛选文件夹，或直接点击下方文件夹选择';
+    this.input.placeholder = this.isFileMode()
+      ? '输入筛选模板文件，或点击下方文件选择'
+      : '输入筛选文件夹，或直接点击下方文件夹选择';
     this.input.style.flex = '1';
     this.input.style.padding = '8px';
     this.input.style.border = '1px solid var(--calendar-border)';
@@ -146,6 +163,18 @@ export class FolderPickerModal extends Modal {
   }
 
   /**
+   * 获取全部 .md 文件路径（缓存，排除隐藏目录；file 模式用）
+   */
+  private getFilePaths(): string[] {
+    if (!this.allFilePaths) {
+      this.allFilePaths = this.app.vault.getMarkdownFiles()
+        .map(f => f.path)
+        .filter(p => !p.split('/').some(seg => seg && seg.startsWith('.')));
+    }
+    return this.allFilePaths;
+  }
+
+  /**
    * 构建文件夹树
    */
   private buildTree(paths: string[]): FolderNode {
@@ -166,7 +195,32 @@ export class FolderPickerModal extends Modal {
   }
 
   /**
-   * 渲染列表：空输入=树状懒加载（顶部含根目录选项），有输入=扁平筛选
+   * 构建"文件夹 + .md 文件"树（file 模式用）
+   * 文件挂载到所属文件夹节点下，作为 isFile 叶子节点
+   */
+  private buildFileTree(): FolderNode {
+    const root = this.buildTree(this.getFolderPaths());
+    this.getFilePaths().forEach(fp => {
+      const segs = fp.split('/');
+      const fileName = segs.pop()!;
+      let node = root;
+      let cur = '';
+      segs.forEach(s => {
+        cur = cur ? `${cur}/${s}` : s;
+        if (!node.children.has(s)) {
+          node.children.set(s, { name: s, path: cur, children: new Map() });
+        }
+        node = node.children.get(s)!;
+      });
+      // vault 中文件与文件夹路径唯一，children 键不会冲突
+      node.children.set(fileName, { name: fileName, path: fp, children: new Map(), isFile: true });
+    });
+    return root;
+  }
+
+  /**
+   * 渲染列表：空输入=树状懒加载，有输入=扁平筛选
+   * file 模式：树中含 .md 文件，无根目录选项；筛选按文件路径匹配
    */
   private renderList(): void {
     const filter = this.input.value.trim();
@@ -174,15 +228,17 @@ export class FolderPickerModal extends Modal {
     this.activeIndex = -1;
 
     if (!filter) {
-      // 根目录选项：留空表示根目录
-      const rootRow = document.createElement('div');
-      rootRow.className = 'calendar-folder-item';
-      rootRow.dataset.path = '';
-      rootRow.textContent = '/（根目录）';
-      rootRow.onclick = () => this.choose('');
-      this.list.appendChild(rootRow);
+      if (!this.isFileMode()) {
+        // 根目录选项：留空表示根目录
+        const rootRow = document.createElement('div');
+        rootRow.className = 'calendar-folder-item';
+        rootRow.dataset.path = '';
+        rootRow.textContent = '/（根目录）';
+        rootRow.onclick = () => this.choose('');
+        this.list.appendChild(rootRow);
+      }
 
-      const tree = this.buildTree(this.getFolderPaths());
+      const tree = this.isFileMode() ? this.buildFileTree() : this.buildTree(this.getFolderPaths());
       const renderNode = (node: FolderNode, depth: number) => {
         node.children.forEach(child => {
           this.list.appendChild(this.createFolderRow(child, depth));
@@ -193,7 +249,9 @@ export class FolderPickerModal extends Modal {
       };
       renderNode(tree, 0);
     } else {
-      const matched = this.getFolderPaths().filter(p => p.includes(filter));
+      const matched = this.isFileMode()
+        ? this.getFilePaths().filter(p => p.includes(filter))
+        : this.getFolderPaths().filter(p => p.includes(filter));
       if (matched.length > 0) {
         matched.forEach(p => {
           const row = document.createElement('div');
@@ -206,7 +264,7 @@ export class FolderPickerModal extends Modal {
       } else {
         const empty = document.createElement('div');
         empty.className = 'calendar-folder-empty';
-        empty.textContent = '无匹配文件夹';
+        empty.textContent = this.isFileMode() ? '无匹配文件' : '无匹配文件夹';
         this.list.appendChild(empty);
       }
     }
@@ -214,16 +272,23 @@ export class FolderPickerModal extends Modal {
 
   /**
    * 树节点行（带展开箭头，箭头热区放大便于点击）
+   * file 模式：文件行点击即选择；文件夹行点击仅展开/收起
    */
   private createFolderRow(child: FolderNode, depth: number): HTMLDivElement {
     const row = document.createElement('div');
-    row.className = 'calendar-folder-item';
+    row.className = child.isFile
+      ? 'calendar-folder-item calendar-file-item'
+      : 'calendar-folder-item';
     row.dataset.path = child.path;
     row.style.paddingLeft = `${depth * 16 + 2}px`;
 
     const arrow = document.createElement('span');
     arrow.className = 'calendar-folder-arrow';
-    if (child.children.size > 0) {
+    if (child.isFile) {
+      // 文件节点：无展开箭头，用文件图标占位保持对齐
+      arrow.classList.add('calendar-folder-arrow-placeholder');
+      arrow.textContent = '📄';
+    } else if (child.children.size > 0) {
       arrow.textContent = this.expandedPaths.has(child.path) ? '▾' : '▸';
       arrow.title = this.expandedPaths.has(child.path) ? '收起' : '展开';
       arrow.onclick = (e) => {
@@ -250,7 +315,26 @@ export class FolderPickerModal extends Modal {
     name.textContent = child.name;
     row.appendChild(name);
 
-    row.onclick = () => this.choose(child.path);
+    if (child.isFile) {
+      // 文件行：点击选择该文件
+      row.onclick = () => this.choose(child.path);
+    } else if (this.isFileMode()) {
+      // file 模式下的文件夹行：点击仅切换展开/收起
+      row.onclick = () => {
+        if (this.expandedPaths.has(child.path)) {
+          this.expandedPaths.delete(child.path);
+        } else {
+          this.expandedPaths.add(child.path);
+        }
+        this.renderList();
+        const rowEl = this.list.querySelector(`[data-path="${child.path}"]`);
+        if (rowEl) {
+          rowEl.scrollIntoView({ block: 'nearest' });
+        }
+      };
+    } else {
+      row.onclick = () => this.choose(child.path);
+    }
 
     return row;
   }
