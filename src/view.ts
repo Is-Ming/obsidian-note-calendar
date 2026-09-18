@@ -24,6 +24,9 @@ export class CalendarView extends ItemView {
     super(leaf);
     this.plugin = plugin;
     this.model = new CalendarModel(plugin.settings || {});
+    // 复用 Plugin 持有的笔记缓存（同一对象引用），
+    // 这样视图被 Obsidian 销毁重建时，已扫描的笔记数据不会丢失
+    this.model.noteCache = plugin.noteCache;
     this.container = null;
     this.header = null;
     this.grid = null;
@@ -63,6 +66,13 @@ export class CalendarView extends ItemView {
 
     // 创建日历容器
     this.createCalendarView();
+
+    // 惰性兜底：缓存为空且当前没有扫描在进行时，主动扫描一次。
+    // 正常情况下缓存由 Plugin 的事件监听持续维护，这里只覆盖
+    // 插件刚启用、缓存尚未建立等边界情况。
+    if (Object.keys(this.model.noteCache).length === 0 && !this.plugin.isScanning) {
+      this.plugin.scanNotes();
+    }
   }
 
   /**

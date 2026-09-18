@@ -1,6 +1,21 @@
 import type { CalendarDayData, NoteCalendarSettings, NoteEntry } from './types';
 
 /**
+ * 格式化日期为 YYYY-MM-DD
+ *
+ * 抽为模块级纯函数，供 CalendarModel 与 Plugin 共用：
+ * Plugin 侧的扫描逻辑不再依赖视图模型（视图可能尚未创建或被销毁）。
+ * @param {Date} date - 待格式化的日期对象
+ * @returns {string} 形如 "2026-09-18" 的日期字符串
+ */
+export function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * 日历数据模型
  */
 export class CalendarModel {
@@ -73,7 +88,10 @@ export class CalendarModel {
     const today = new Date();
     this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     this.selectedDate.setHours(0, 0, 0, 0);
-    // 笔记缓存：按日期存储笔记信息
+    // 笔记缓存：按日期存储笔记信息。
+    // 这里的空对象仅作兜底，实际运行时由 CalendarView 在构造时
+    // 注入 Plugin 持有的共享引用（见 view.ts），
+    // 保证缓存不随视图重建而丢失。
     this.noteCache = {};
   }
 
@@ -95,10 +113,7 @@ export class CalendarModel {
    * 格式化日期为YYYY-MM-DD
    */
   formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return formatDate(date);
   }
 
   /**

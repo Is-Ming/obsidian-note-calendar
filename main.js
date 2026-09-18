@@ -11763,6 +11763,248 @@ var require_lunar_javascript = __commonJS({
 // src/main.ts
 var import_obsidian5 = require("obsidian");
 
+// src/model.ts
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+var CalendarModel = class {
+  constructor(settings = {}) {
+    this.currentDate = /* @__PURE__ */ new Date();
+    this.viewYear = this.currentDate.getFullYear();
+    this.viewMonth = this.currentDate.getMonth() + 1;
+    this.startOfWeek = settings.startOfWeek || 0;
+    this.weekendColor = settings.weekendColor || "#e57373";
+    this.themeColor = settings.themeColor || "#5d4ed8";
+    this.followAccentColor = !!settings.followAccentColor;
+    this.showLunarDate = settings.showLunarDate !== void 0 ? settings.showLunarDate : true;
+    this.showSolarFestivals = settings.showSolarFestivals !== void 0 ? settings.showSolarFestivals : true;
+    this.showLunarFestivals = settings.showLunarFestivals !== void 0 ? settings.showLunarFestivals : true;
+    this.showHolidayMarker = settings.showHolidayMarker !== void 0 ? settings.showHolidayMarker : true;
+    this.showJieQi = settings.showJieQi !== void 0 ? settings.showJieQi : true;
+    this.noteFolderPath = settings.noteFolderPath || "";
+    this.fontFamily = settings.fontFamily || "default";
+    this.fontSize = settings.fontSize || 14;
+    this.themeMode = settings.themeMode || "auto";
+    this.dailyTitleFormat = settings.dailyTitleFormat || "YYYY-MM-DD";
+    this.dailyFolderPath = settings.dailyFolderPath || "";
+    this.weeklyTitleFormat = settings.weeklyTitleFormat || "YYYY-{week}\u5468";
+    this.weeklyFolderPath = settings.weeklyFolderPath || "";
+    this.quarterlyTitleFormat = settings.quarterlyTitleFormat || "YYYY\u5E74-{quarter}\u5B63\u5EA6";
+    this.quarterlyFolderPath = settings.quarterlyFolderPath || "";
+    this.yearlyTitleFormat = settings.yearlyTitleFormat || "YYYY";
+    this.yearlyFolderPath = settings.yearlyFolderPath || "";
+    this.monthlyTitleFormat = settings.monthlyTitleFormat || "YYYY\u5E74MM\u6708";
+    this.monthlyFolderPath = settings.monthlyFolderPath || "";
+    this.showQuarterly = settings.showQuarterly !== void 0 ? settings.showQuarterly : true;
+    this.quarterlyMode = settings.quarterlyMode || "number";
+    this.quarterStartMonth = settings.quarterStartMonth || 1;
+    this.quarterlyCustomNames = settings.quarterlyCustomNames || "\u6625\u5B63,\u590F\u5B63,\u79CB\u5B63,\u51AC\u5B63";
+    const today = /* @__PURE__ */ new Date();
+    this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    this.selectedDate.setHours(0, 0, 0, 0);
+    this.noteCache = {};
+  }
+  /**
+   * 更新周末颜色
+   */
+  setWeekendColor(color) {
+    this.weekendColor = color;
+  }
+  /**
+   * 更新主题颜色
+   */
+  setThemeColor(color) {
+    this.themeColor = color;
+  }
+  /**
+   * 格式化日期为YYYY-MM-DD
+   */
+  formatDate(date) {
+    return formatDate(date);
+  }
+  /**
+   * 获取指定日期的笔记列表
+   */
+  getNotesForDate(dateStr) {
+    return this.noteCache[dateStr] || [];
+  }
+  /**
+   * 检查指定日期是否有笔记
+   */
+  hasNotesForDate(dateStr) {
+    return this.noteCache[dateStr] && this.noteCache[dateStr].length > 0;
+  }
+  /**
+   * 获取当前视图的年月
+   */
+  getViewDate() {
+    return { year: this.viewYear, month: this.viewMonth };
+  }
+  /**
+   * 设置视图日期
+   */
+  setViewDate(year, month) {
+    this.viewYear = year;
+    this.viewMonth = month;
+  }
+  /**
+   * 上一个月
+   */
+  previousMonth() {
+    if (this.viewMonth === 1) {
+      this.viewMonth = 12;
+      this.viewYear--;
+    } else {
+      this.viewMonth--;
+    }
+  }
+  /**
+   * 下一个月
+   */
+  nextMonth() {
+    if (this.viewMonth === 12) {
+      this.viewMonth = 1;
+      this.viewYear++;
+    } else {
+      this.viewMonth++;
+    }
+  }
+  /**
+   * 上一年
+   */
+  previousYear() {
+    this.viewYear--;
+  }
+  /**
+   * 下一年
+   */
+  nextYear() {
+    this.viewYear++;
+  }
+  /**
+   * 获取月份的第一天是星期几 (0=周日, 1=周一, ..., 6=周六)
+   */
+  getFirstDayOfMonth(year, month) {
+    const date = new Date(year, month - 1, 1);
+    let day = date.getDay();
+    if (this.startOfWeek === 1) {
+      day = (day + 6) % 7;
+    }
+    return day;
+  }
+  /**
+   * 获取星期标题
+   */
+  getWeekdayLabels() {
+    if (this.startOfWeek === 0) {
+      return ["\u65E5", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D"];
+    } else {
+      return ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"];
+    }
+  }
+  /**
+   * 获取月份的总天数
+   */
+  getDaysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+  }
+  /**
+   * 获取日历网格数据
+   */
+  getCalendarData() {
+    const firstDay = this.getFirstDayOfMonth(this.viewYear, this.viewMonth);
+    const daysInMonth = this.getDaysInMonth(this.viewYear, this.viewMonth);
+    const calendarDays = [];
+    const prevMonthDays = this.getDaysInMonth(
+      this.viewMonth === 1 ? this.viewYear - 1 : this.viewYear,
+      this.viewMonth === 1 ? 12 : this.viewMonth - 1
+    );
+    const prevMonthYear = this.viewMonth === 1 ? this.viewYear - 1 : this.viewYear;
+    const prevMonth = this.viewMonth === 1 ? 12 : this.viewMonth - 1;
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      const date = new Date(prevMonthYear, prevMonth - 1, day);
+      calendarDays.push({
+        day,
+        isCurrentMonth: false,
+        date,
+        weekNumber: null
+      });
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(this.viewYear, this.viewMonth - 1, i);
+      calendarDays.push({
+        day: i,
+        isCurrentMonth: true,
+        date,
+        isToday: this.isToday(this.viewYear, this.viewMonth, i),
+        weekNumber: this.getWeekNumber(date)
+      });
+    }
+    const totalCells = 42;
+    const remainingCells = totalCells - calendarDays.length;
+    const nextMonthYear = this.viewMonth === 12 ? this.viewYear + 1 : this.viewYear;
+    const nextMonth = this.viewMonth === 12 ? 1 : this.viewMonth + 1;
+    for (let i = 1; i <= remainingCells; i++) {
+      const date = new Date(nextMonthYear, nextMonth - 1, i);
+      calendarDays.push({
+        day: i,
+        isCurrentMonth: false,
+        date,
+        weekNumber: null
+      });
+    }
+    return calendarDays;
+  }
+  /**
+   * 判断是否为今天
+   */
+  isToday(year, month, day) {
+    const today = /* @__PURE__ */ new Date();
+    return today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === day;
+  }
+  /**
+   * 计算周数
+   */
+  getWeekNumber(date) {
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7;
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = target.valueOf();
+    target.setMonth(0, 1);
+    if (target.getDay() !== 4) {
+      target.setMonth(0, 1 + (4 - target.getDay() + 7) % 7);
+    }
+    return 1 + Math.ceil((firstThursday - target.valueOf()) / 6048e5);
+  }
+  /**
+   * 跳转到今天
+   */
+  goToToday() {
+    const today = /* @__PURE__ */ new Date();
+    this.viewYear = today.getFullYear();
+    this.viewMonth = today.getMonth() + 1;
+    this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    this.selectedDate.setHours(0, 0, 0, 0);
+  }
+  /**
+   * 选择日期
+   */
+  selectDate(year, month, day) {
+    this.selectedDate = new Date(year, month - 1, day);
+  }
+  /**
+   * 判断是否是选中的日期
+   */
+  isSelectedDate(year, month, day) {
+    if (!this.selectedDate) return false;
+    return this.selectedDate.getFullYear() === year && this.selectedDate.getMonth() + 1 === month && this.selectedDate.getDate() === day;
+  }
+};
+
 // src/settings.ts
 var import_obsidian3 = require("obsidian");
 
@@ -12565,252 +12807,12 @@ var VIEW_TYPE_CALENDAR = "note-calendar-view";
 // src/view.ts
 var import_obsidian4 = require("obsidian");
 var import_lunar_javascript = __toESM(require_lunar_javascript());
-
-// src/model.ts
-var CalendarModel = class {
-  constructor(settings = {}) {
-    this.currentDate = /* @__PURE__ */ new Date();
-    this.viewYear = this.currentDate.getFullYear();
-    this.viewMonth = this.currentDate.getMonth() + 1;
-    this.startOfWeek = settings.startOfWeek || 0;
-    this.weekendColor = settings.weekendColor || "#e57373";
-    this.themeColor = settings.themeColor || "#5d4ed8";
-    this.followAccentColor = !!settings.followAccentColor;
-    this.showLunarDate = settings.showLunarDate !== void 0 ? settings.showLunarDate : true;
-    this.showSolarFestivals = settings.showSolarFestivals !== void 0 ? settings.showSolarFestivals : true;
-    this.showLunarFestivals = settings.showLunarFestivals !== void 0 ? settings.showLunarFestivals : true;
-    this.showHolidayMarker = settings.showHolidayMarker !== void 0 ? settings.showHolidayMarker : true;
-    this.showJieQi = settings.showJieQi !== void 0 ? settings.showJieQi : true;
-    this.noteFolderPath = settings.noteFolderPath || "";
-    this.fontFamily = settings.fontFamily || "default";
-    this.fontSize = settings.fontSize || 14;
-    this.themeMode = settings.themeMode || "auto";
-    this.dailyTitleFormat = settings.dailyTitleFormat || "YYYY-MM-DD";
-    this.dailyFolderPath = settings.dailyFolderPath || "";
-    this.weeklyTitleFormat = settings.weeklyTitleFormat || "YYYY-{week}\u5468";
-    this.weeklyFolderPath = settings.weeklyFolderPath || "";
-    this.quarterlyTitleFormat = settings.quarterlyTitleFormat || "YYYY\u5E74-{quarter}\u5B63\u5EA6";
-    this.quarterlyFolderPath = settings.quarterlyFolderPath || "";
-    this.yearlyTitleFormat = settings.yearlyTitleFormat || "YYYY";
-    this.yearlyFolderPath = settings.yearlyFolderPath || "";
-    this.monthlyTitleFormat = settings.monthlyTitleFormat || "YYYY\u5E74MM\u6708";
-    this.monthlyFolderPath = settings.monthlyFolderPath || "";
-    this.showQuarterly = settings.showQuarterly !== void 0 ? settings.showQuarterly : true;
-    this.quarterlyMode = settings.quarterlyMode || "number";
-    this.quarterStartMonth = settings.quarterStartMonth || 1;
-    this.quarterlyCustomNames = settings.quarterlyCustomNames || "\u6625\u5B63,\u590F\u5B63,\u79CB\u5B63,\u51AC\u5B63";
-    const today = /* @__PURE__ */ new Date();
-    this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    this.selectedDate.setHours(0, 0, 0, 0);
-    this.noteCache = {};
-  }
-  /**
-   * 更新周末颜色
-   */
-  setWeekendColor(color) {
-    this.weekendColor = color;
-  }
-  /**
-   * 更新主题颜色
-   */
-  setThemeColor(color) {
-    this.themeColor = color;
-  }
-  /**
-   * 格式化日期为YYYY-MM-DD
-   */
-  formatDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-  /**
-   * 获取指定日期的笔记列表
-   */
-  getNotesForDate(dateStr) {
-    return this.noteCache[dateStr] || [];
-  }
-  /**
-   * 检查指定日期是否有笔记
-   */
-  hasNotesForDate(dateStr) {
-    return this.noteCache[dateStr] && this.noteCache[dateStr].length > 0;
-  }
-  /**
-   * 获取当前视图的年月
-   */
-  getViewDate() {
-    return { year: this.viewYear, month: this.viewMonth };
-  }
-  /**
-   * 设置视图日期
-   */
-  setViewDate(year, month) {
-    this.viewYear = year;
-    this.viewMonth = month;
-  }
-  /**
-   * 上一个月
-   */
-  previousMonth() {
-    if (this.viewMonth === 1) {
-      this.viewMonth = 12;
-      this.viewYear--;
-    } else {
-      this.viewMonth--;
-    }
-  }
-  /**
-   * 下一个月
-   */
-  nextMonth() {
-    if (this.viewMonth === 12) {
-      this.viewMonth = 1;
-      this.viewYear++;
-    } else {
-      this.viewMonth++;
-    }
-  }
-  /**
-   * 上一年
-   */
-  previousYear() {
-    this.viewYear--;
-  }
-  /**
-   * 下一年
-   */
-  nextYear() {
-    this.viewYear++;
-  }
-  /**
-   * 获取月份的第一天是星期几 (0=周日, 1=周一, ..., 6=周六)
-   */
-  getFirstDayOfMonth(year, month) {
-    const date = new Date(year, month - 1, 1);
-    let day = date.getDay();
-    if (this.startOfWeek === 1) {
-      day = (day + 6) % 7;
-    }
-    return day;
-  }
-  /**
-   * 获取星期标题
-   */
-  getWeekdayLabels() {
-    if (this.startOfWeek === 0) {
-      return ["\u65E5", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D"];
-    } else {
-      return ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"];
-    }
-  }
-  /**
-   * 获取月份的总天数
-   */
-  getDaysInMonth(year, month) {
-    return new Date(year, month, 0).getDate();
-  }
-  /**
-   * 获取日历网格数据
-   */
-  getCalendarData() {
-    const firstDay = this.getFirstDayOfMonth(this.viewYear, this.viewMonth);
-    const daysInMonth = this.getDaysInMonth(this.viewYear, this.viewMonth);
-    const calendarDays = [];
-    const prevMonthDays = this.getDaysInMonth(
-      this.viewMonth === 1 ? this.viewYear - 1 : this.viewYear,
-      this.viewMonth === 1 ? 12 : this.viewMonth - 1
-    );
-    const prevMonthYear = this.viewMonth === 1 ? this.viewYear - 1 : this.viewYear;
-    const prevMonth = this.viewMonth === 1 ? 12 : this.viewMonth - 1;
-    for (let i = firstDay - 1; i >= 0; i--) {
-      const day = prevMonthDays - i;
-      const date = new Date(prevMonthYear, prevMonth - 1, day);
-      calendarDays.push({
-        day,
-        isCurrentMonth: false,
-        date,
-        weekNumber: null
-      });
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(this.viewYear, this.viewMonth - 1, i);
-      calendarDays.push({
-        day: i,
-        isCurrentMonth: true,
-        date,
-        isToday: this.isToday(this.viewYear, this.viewMonth, i),
-        weekNumber: this.getWeekNumber(date)
-      });
-    }
-    const totalCells = 42;
-    const remainingCells = totalCells - calendarDays.length;
-    const nextMonthYear = this.viewMonth === 12 ? this.viewYear + 1 : this.viewYear;
-    const nextMonth = this.viewMonth === 12 ? 1 : this.viewMonth + 1;
-    for (let i = 1; i <= remainingCells; i++) {
-      const date = new Date(nextMonthYear, nextMonth - 1, i);
-      calendarDays.push({
-        day: i,
-        isCurrentMonth: false,
-        date,
-        weekNumber: null
-      });
-    }
-    return calendarDays;
-  }
-  /**
-   * 判断是否为今天
-   */
-  isToday(year, month, day) {
-    const today = /* @__PURE__ */ new Date();
-    return today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === day;
-  }
-  /**
-   * 计算周数
-   */
-  getWeekNumber(date) {
-    const target = new Date(date.valueOf());
-    const dayNr = (date.getDay() + 6) % 7;
-    target.setDate(target.getDate() - dayNr + 3);
-    const firstThursday = target.valueOf();
-    target.setMonth(0, 1);
-    if (target.getDay() !== 4) {
-      target.setMonth(0, 1 + (4 - target.getDay() + 7) % 7);
-    }
-    return 1 + Math.ceil((firstThursday - target.valueOf()) / 6048e5);
-  }
-  /**
-   * 跳转到今天
-   */
-  goToToday() {
-    const today = /* @__PURE__ */ new Date();
-    this.viewYear = today.getFullYear();
-    this.viewMonth = today.getMonth() + 1;
-    this.selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    this.selectedDate.setHours(0, 0, 0, 0);
-  }
-  /**
-   * 选择日期
-   */
-  selectDate(year, month, day) {
-    this.selectedDate = new Date(year, month - 1, day);
-  }
-  /**
-   * 判断是否是选中的日期
-   */
-  isSelectedDate(year, month, day) {
-    if (!this.selectedDate) return false;
-    return this.selectedDate.getFullYear() === year && this.selectedDate.getMonth() + 1 === month && this.selectedDate.getDate() === day;
-  }
-};
-
-// src/view.ts
 var CalendarView = class extends import_obsidian4.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
     this.model = new CalendarModel(plugin.settings || {});
+    this.model.noteCache = plugin.noteCache;
     this.container = null;
     this.header = null;
     this.grid = null;
@@ -12838,6 +12840,9 @@ var CalendarView = class extends import_obsidian4.ItemView {
   async onOpen() {
     this.contentEl.addClass("note-calendar-view");
     this.createCalendarView();
+    if (Object.keys(this.model.noteCache).length === 0 && !this.plugin.isScanning) {
+      this.plugin.scanNotes();
+    }
   }
   /**
    * 创建日历视图
@@ -13824,6 +13829,28 @@ var CalendarView = class extends import_obsidian4.ItemView {
 
 // src/main.ts
 var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
+  constructor() {
+    super(...arguments);
+    /**
+     * 笔记缓存（Plugin 级单一数据源）
+     *
+     * 缓存放在 Plugin 上而不是视图模型上，原因：
+     * Obsidian 会销毁并重建长期不可见的侧栏视图，视图重建时会 new 出
+     * 全新的 CalendarModel（noteCache 为空），导致笔记列表丢失。
+     * 缓存由 Plugin 持有后，视图只持有同一份对象引用，重建不影响数据。
+     *
+     * 结构：{ "YYYY-MM-DD": NoteEntry[] }
+     */
+    this.noteCache = {};
+    /**
+     * 全量扫描进行中标记，用于防止并发重复全量扫描（全量扫描成本较高）
+     */
+    this.isScanning = false;
+    /**
+     * 扫描期间收到的新触发请求：当前扫描结束后补跑一次，避免触发被吞掉
+     */
+    this.scanPending = false;
+  }
   async onload() {
     await this.loadSettings();
     this.registerView(
@@ -13841,11 +13868,16 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
         this.toggleCalendarView();
       }
     });
+    this.addCommand({
+      id: "rescan-notes",
+      name: "\u91CD\u65B0\u626B\u63CF\u7B14\u8BB0",
+      callback: () => {
+        this.scanNotes();
+      }
+    });
     this.app.workspace.onLayoutReady(() => {
       this.initLeaf();
-      setTimeout(() => {
-        this.scanNotes();
-      }, 1e3);
+      this.scanNotes();
     });
     this.registerEvent(
       this.app.vault.on("create", (file) => {
@@ -13893,26 +13925,19 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
           if (this.settings.noteFolderPath && !file.path.startsWith(this.settings.noteFolderPath)) {
             return;
           }
-          const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
-          if (leaves.length > 0) {
-            const view = leaves[0].view;
-            if (view && view.model) {
-              const model = view.model;
-              const datesToClear = [];
-              for (const dateStr in model.noteCache) {
-                const notes = model.noteCache[dateStr];
-                if (notes.some((note) => note.path === file.path)) {
-                  datesToClear.push(dateStr);
-                }
-              }
-              for (const dateStr of datesToClear) {
-                console.log(`[NoteCalendar] \u6E05\u7A7A\u65E5\u671F ${dateStr} \u7684\u7F13\u5B58`);
-                delete model.noteCache[dateStr];
-                await this.rescanDate(model, dateStr);
-              }
-              view.render();
+          const datesToClear = [];
+          for (const dateStr in this.noteCache) {
+            const notes = this.noteCache[dateStr];
+            if (notes.some((note) => note.path === file.path)) {
+              datesToClear.push(dateStr);
             }
           }
+          for (const dateStr of datesToClear) {
+            console.log(`[NoteCalendar] \u6E05\u7A7A\u65E5\u671F ${dateStr} \u7684\u7F13\u5B58`);
+            delete this.noteCache[dateStr];
+            await this.rescanDate(dateStr);
+          }
+          this.renderAllViews();
         }
       })
     );
@@ -13975,39 +14000,38 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
     });
   }
   /**
-   * 扫描笔记并更新缓存
+   * 全量扫描笔记并重建缓存
+   *
+   * 缓存写在 Plugin 上，不依赖日历视图是否存在：即使日历当前未打开，
+   * 扫描结果也会被保留，等视图创建时直接复用。
+   * 扫描完成后统一刷新所有已打开的日历视图。
+   *
+   * 并发保护：扫描进行中再次触发时只记录待补扫，当前扫描结束后自动补跑一次，
+   * 避免重复的全量 IO（每个文件一次 stat，成本较高）。
    */
   async scanNotes() {
-    console.log("[NoteCalendar] \u5F00\u59CB\u626B\u63CF\u7B14\u8BB0...");
-    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
-    if (leaves.length === 0) {
-      console.log("[NoteCalendar] \u6CA1\u6709\u627E\u5230\u65E5\u5386\u89C6\u56FE");
+    if (this.isScanning) {
+      this.scanPending = true;
+      console.log("[NoteCalendar] \u626B\u63CF\u8FDB\u884C\u4E2D\uFF0C\u672C\u6B21\u89E6\u53D1\u5DF2\u6392\u961F");
       return;
     }
-    const view = leaves[0].view;
-    if (!view || !view.model) {
-      console.log("[NoteCalendar] \u6CA1\u6709\u627E\u5230\u65E5\u5386\u6A21\u578B");
-      return;
-    }
-    const model = view.model;
-    const noteCache = {};
-    const files = this.app.vault.getMarkdownFiles();
-    console.log(`[NoteCalendar] \u627E\u5230 ${files.length} \u4E2Amarkdown\u6587\u4EF6`);
-    console.log(`[NoteCalendar] \u7B14\u8BB0\u6587\u4EF6\u5939\u8DEF\u5F84: "${this.settings.noteFolderPath}"`);
-    let processedCount = 0;
-    for (const file of files) {
-      console.log(`[NoteCalendar] \u6B63\u5728\u5904\u7406\u6587\u4EF6: ${file}`);
-      if (this.settings.noteFolderPath && !file.path.startsWith(this.settings.noteFolderPath)) {
-        continue;
-      }
-      const stat = await this.app.vault.adapter.stat(file.path);
-      if (!stat) continue;
-      const createdDate = new Date(stat.ctime);
-      const modifiedDate = new Date(stat.mtime);
-      const createdDateStr = model.formatDate(createdDate);
-      const modifiedDateStr = model.formatDate(modifiedDate);
-      const title = file.basename;
-      if (createdDateStr === modifiedDateStr) {
+    this.isScanning = true;
+    try {
+      console.log("[NoteCalendar] \u5F00\u59CB\u626B\u63CF\u7B14\u8BB0...");
+      const noteCache = {};
+      const files = this.app.vault.getMarkdownFiles();
+      console.log(`[NoteCalendar] \u627E\u5230 ${files.length} \u4E2Amarkdown\u6587\u4EF6`);
+      console.log(`[NoteCalendar] \u7B14\u8BB0\u6587\u4EF6\u5939\u8DEF\u5F84: "${this.settings.noteFolderPath}"`);
+      let processedCount = 0;
+      for (const file of files) {
+        if (this.settings.noteFolderPath && !file.path.startsWith(this.settings.noteFolderPath)) {
+          continue;
+        }
+        const stat = await this.app.vault.adapter.stat(file.path);
+        if (!stat) continue;
+        const createdDateStr = formatDate(new Date(stat.ctime));
+        const modifiedDateStr = formatDate(new Date(stat.mtime));
+        const title = file.basename;
         if (!noteCache[createdDateStr]) {
           noteCache[createdDateStr] = [];
         }
@@ -14019,58 +14043,71 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
           updatedAt: stat.mtime
           // 记录更新时间，用于列表排序
         });
-      } else {
-        if (!noteCache[createdDateStr]) {
-          noteCache[createdDateStr] = [];
+        if (createdDateStr !== modifiedDateStr) {
+          if (!noteCache[modifiedDateStr]) {
+            noteCache[modifiedDateStr] = [];
+          }
+          noteCache[modifiedDateStr].push({
+            path: file.path,
+            title,
+            type: "updated",
+            updatedAt: stat.mtime
+            // 记录更新时间，用于列表排序
+          });
         }
-        noteCache[createdDateStr].push({
-          path: file.path,
-          title,
-          type: "created",
-          updatedAt: stat.mtime
-          // 记录更新时间，用于列表排序
-        });
-        if (!noteCache[modifiedDateStr]) {
-          noteCache[modifiedDateStr] = [];
-        }
-        noteCache[modifiedDateStr].push({
-          path: file.path,
-          title,
-          type: "updated",
-          updatedAt: stat.mtime
-          // 记录更新时间，用于列表排序
-        });
+        processedCount++;
       }
-      processedCount++;
+      console.log(`[NoteCalendar] \u5904\u7406\u4E86 ${processedCount} \u4E2A\u7B14\u8BB0`);
+      console.log(`[NoteCalendar] \u7B14\u8BB0\u7F13\u5B58\u65E5\u671F\u6570\u91CF: ${Object.keys(noteCache).length}`);
+      this.replaceNoteCache(noteCache);
+      this.renderAllViews();
+      console.log("[NoteCalendar] \u7B14\u8BB0\u626B\u63CF\u5B8C\u6210");
+    } finally {
+      this.isScanning = false;
+      if (this.scanPending) {
+        this.scanPending = false;
+        await this.scanNotes();
+      }
     }
-    console.log(`[NoteCalendar] \u5904\u7406\u4E86 ${processedCount} \u4E2A\u7B14\u8BB0`);
-    console.log(`[NoteCalendar] \u7B14\u8BB0\u7F13\u5B58\u65E5\u671F\u6570\u91CF: ${Object.keys(noteCache).length}`);
-    const dates = Object.keys(noteCache).slice(0, 3);
-    dates.forEach((date) => {
-      console.log(`[NoteCalendar] \u65E5\u671F ${date}: ${noteCache[date].length} \u4E2A\u7B14\u8BB0`);
-    });
-    model.noteCache = noteCache;
-    view.render();
-    console.log("[NoteCalendar] \u7B14\u8BB0\u626B\u63CF\u5B8C\u6210");
   }
   /**
-   * 更新笔记缓存（用于文件事件监听）
-   * 策略：清空相关日期的缓存，重新扫描这些日期的笔记
+   * 原地替换缓存内容（保持对象引用不变）
+   *
+   * 视图持有的 noteCache 是同一个对象引用，因此必须原地增删改，
+   * 不能整体重新赋值，否则视图会与 Plugin 的缓存脱钩。
+   * @param {Record<string, NoteEntry[]>} next - 新构建的缓存内容
+   */
+  replaceNoteCache(next) {
+    for (const key of Object.keys(this.noteCache)) {
+      delete this.noteCache[key];
+    }
+    Object.assign(this.noteCache, next);
+  }
+  /**
+   * 刷新所有已打开的日历视图（支持同时存在多个日历视图的场景）
+   */
+  renderAllViews() {
+    this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR).forEach((leaf) => {
+      const view = leaf.view;
+      if (view && typeof view.render === "function") {
+        view.render();
+      }
+    });
+  }
+  /**
+   * 更新单个文件的笔记缓存（用于文件创建/修改事件）
+   *
+   * 只重扫该文件的创建日期与修改日期，成本远低于全量扫描。
+   * 不依赖日历视图是否存在：日历未打开时事件依然会更新缓存。
+   * @param {string} filePath - 发生变更的文件路径
    */
   async updateTodayNote(filePath) {
-    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
-    if (leaves.length === 0) return;
-    const view = leaves[0].view;
-    if (!view || !view.model) return;
-    const model = view.model;
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (!file) return;
     const stat = await this.app.vault.adapter.stat(filePath);
     if (!stat) return;
-    const fileCreatedDate = new Date(stat.ctime);
-    const fileCreatedDateStr = model.formatDate(fileCreatedDate);
-    const fileModifiedDate = new Date(stat.mtime);
-    const fileModifiedDateStr = model.formatDate(fileModifiedDate);
+    const fileCreatedDateStr = formatDate(new Date(stat.ctime));
+    const fileModifiedDateStr = formatDate(new Date(stat.mtime));
     console.log(`[NoteCalendar] \u66F4\u65B0\u7B14\u8BB0\u7F13\u5B58\uFF0C\u6587\u4EF6: ${filePath}`);
     console.log(`[NoteCalendar] \u521B\u5EFA\u65E5\u671F: ${fileCreatedDateStr}, \u4FEE\u6539\u65E5\u671F: ${fileModifiedDateStr}`);
     const datesToUpdate = /* @__PURE__ */ new Set();
@@ -14079,23 +14116,20 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
       datesToUpdate.add(fileModifiedDateStr);
     }
     for (const dateStr of datesToUpdate) {
-      if (model.noteCache[dateStr]) {
+      if (this.noteCache[dateStr]) {
         console.log(`[NoteCalendar] \u6E05\u7A7A\u65E5\u671F ${dateStr} \u7684\u7F13\u5B58`);
-        delete model.noteCache[dateStr];
+        delete this.noteCache[dateStr];
       }
-      await this.rescanDate(model, dateStr);
+      await this.rescanDate(dateStr);
     }
-    view.render();
+    this.renderAllViews();
   }
   /**
-   * 重新扫描指定日期的笔记
+   * 重新扫描指定日期的笔记（单日期粒度，用于文件事件的增量更新）
+   * @param {string} dateStr - 目标日期，格式 YYYY-MM-DD
    */
-  async rescanDate(model, dateStr) {
+  async rescanDate(dateStr) {
     console.log(`[NoteCalendar] \u91CD\u65B0\u626B\u63CF\u65E5\u671F: ${dateStr}`);
-    const [year, month, day] = dateStr.split("-").map((n) => parseInt(n));
-    const targetDate = new Date(year, month - 1, day);
-    const targetDateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const targetDateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
     const files = this.app.vault.getMarkdownFiles();
     const notesForDate = [];
     for (const file of files) {
@@ -14105,9 +14139,7 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
       try {
         const stat = await this.app.vault.adapter.stat(file.path);
         if (!stat) continue;
-        const createdDate = new Date(stat.ctime);
-        const modifiedDate = new Date(stat.mtime);
-        const createdDateStr = model.formatDate(createdDate);
+        const createdDateStr = formatDate(new Date(stat.ctime));
         if (createdDateStr === dateStr) {
           notesForDate.push({
             path: file.path,
@@ -14117,7 +14149,7 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
             // 记录更新时间，用于列表排序
           });
         }
-        const modifiedDateStr = model.formatDate(modifiedDate);
+        const modifiedDateStr = formatDate(new Date(stat.mtime));
         if (modifiedDateStr === dateStr && createdDateStr !== dateStr) {
           notesForDate.push({
             path: file.path,
@@ -14132,40 +14164,35 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
       }
     }
     if (notesForDate.length > 0) {
-      model.noteCache[dateStr] = notesForDate;
+      this.noteCache[dateStr] = notesForDate;
       console.log(`[NoteCalendar] \u65E5\u671F ${dateStr} \u627E\u5230 ${notesForDate.length} \u4E2A\u7B14\u8BB0`);
+    } else if (this.noteCache[dateStr]) {
+      delete this.noteCache[dateStr];
+      console.log(`[NoteCalendar] \u65E5\u671F ${dateStr} \u6CA1\u6709\u627E\u5230\u7B14\u8BB0\uFF0C\u5DF2\u5220\u9664\u7F13\u5B58`);
     } else {
-      if (model.noteCache[dateStr]) {
-        delete model.noteCache[dateStr];
-        console.log(`[NoteCalendar] \u65E5\u671F ${dateStr} \u6CA1\u6709\u627E\u5230\u7B14\u8BB0\uFF0C\u5DF2\u5220\u9664\u7F13\u5B58`);
-      } else {
-        console.log(`[NoteCalendar] \u65E5\u671F ${dateStr} \u6CA1\u6709\u627E\u5230\u7B14\u8BB0`);
-      }
+      console.log(`[NoteCalendar] \u65E5\u671F ${dateStr} \u6CA1\u6709\u627E\u5230\u7B14\u8BB0`);
     }
   }
   /**
    * 处理文件重命名
-   * 策略：清空相关日期的缓存，重新扫描这些日期的笔记
+   *
+   * 策略：清空旧路径涉及的日期 + 新文件创建/修改日期，再逐个重扫。
+   * 不依赖日历视图是否存在。
+   * @param {string} oldPath - 重命名前的路径
+   * @param {string} newPath - 重命名后的路径
    */
   async handleFileRename(oldPath, newPath) {
     console.log(`[NoteCalendar] \u5904\u7406\u6587\u4EF6\u91CD\u547D\u540D: ${oldPath} -> ${newPath}`);
-    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
-    if (leaves.length === 0) return;
-    const view = leaves[0].view;
-    if (!view || !view.model) return;
-    const model = view.model;
     const newFile = this.app.vault.getAbstractFileByPath(newPath);
     if (!newFile) return;
     const stat = await this.app.vault.adapter.stat(newPath);
     if (!stat) return;
-    const createdDate = new Date(stat.ctime);
-    const modifiedDate = new Date(stat.mtime);
-    const createdDateStr = model.formatDate(createdDate);
-    const modifiedDateStr = model.formatDate(modifiedDate);
+    const createdDateStr = formatDate(new Date(stat.ctime));
+    const modifiedDateStr = formatDate(new Date(stat.mtime));
     console.log(`[NoteCalendar] \u6587\u4EF6\u521B\u5EFA\u65E5\u671F: ${createdDateStr}, \u4FEE\u6539\u65E5\u671F: ${modifiedDateStr}`);
     const datesToRescan = /* @__PURE__ */ new Set();
-    for (const dateStr in model.noteCache) {
-      const notes = model.noteCache[dateStr];
+    for (const dateStr in this.noteCache) {
+      const notes = this.noteCache[dateStr];
       if (notes.some((note) => note.path === oldPath)) {
         datesToRescan.add(dateStr);
         console.log(`[NoteCalendar] \u6DFB\u52A0\u5230\u91CD\u65B0\u626B\u63CF\u5217\u8868: ${dateStr}`);
@@ -14176,15 +14203,15 @@ var NoteCalendarPlugin = class extends import_obsidian5.Plugin {
       datesToRescan.add(modifiedDateStr);
     }
     datesToRescan.forEach((dateStr) => {
-      if (model.noteCache[dateStr]) {
-        delete model.noteCache[dateStr];
+      if (this.noteCache[dateStr]) {
+        delete this.noteCache[dateStr];
         console.log(`[NoteCalendar] \u6E05\u7A7A\u65E5\u671F ${dateStr} \u7684\u7F13\u5B58`);
       }
     });
     for (const dateStr of datesToRescan) {
-      await this.rescanDate(model, dateStr);
+      await this.rescanDate(dateStr);
     }
-    view.render();
+    this.renderAllViews();
     console.log(`[NoteCalendar] \u6587\u4EF6\u91CD\u547D\u540D\u5904\u7406\u5B8C\u6210`);
   }
   async onunload() {
