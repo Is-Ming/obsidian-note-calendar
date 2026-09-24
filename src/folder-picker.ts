@@ -62,14 +62,12 @@ export class FolderPickerModal extends Modal {
     titleEl.textContent = this.options.title;
 
     // 弹窗宽度适配 Obsidian 主题
-    this.modalEl.style.width = '480px';
+    this.modalEl.setCssStyles({ width: '480px' });
     contentEl.empty();
 
     // 输入区：筛选输入框 + 清除按钮
     const inputWrap = document.createElement('div');
-    inputWrap.style.display = 'flex';
-    inputWrap.style.gap = '6px';
-    inputWrap.style.marginBottom = '8px';
+    inputWrap.setCssStyles({ display: 'flex', gap: '6px', marginBottom: '8px' });
 
     this.input = document.createElement('input');
     this.input.type = 'text';
@@ -77,25 +75,14 @@ export class FolderPickerModal extends Modal {
     this.input.placeholder = this.isFileMode()
       ? '输入筛选模板文件，或点击下方文件选择'
       : '输入筛选文件夹，或直接点击下方文件夹选择';
-    this.input.style.flex = '1';
-    this.input.style.padding = '8px';
-    this.input.style.border = '1px solid var(--calendar-border)';
-    this.input.style.borderRadius = '4px';
-    this.input.style.backgroundColor = 'var(--calendar-bg)';
-    this.input.style.color = 'var(--calendar-text)';
+    this.input.setCssStyles({ flex: '1', padding: '8px', border: '1px solid var(--calendar-border)', borderRadius: '4px', backgroundColor: 'var(--calendar-bg)', color: 'var(--calendar-text)' });
     inputWrap.appendChild(this.input);
 
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
     clearBtn.textContent = '✕';
     clearBtn.title = '清空输入';
-    clearBtn.style.padding = '8px 10px';
-    clearBtn.style.border = '1px solid var(--calendar-border)';
-    clearBtn.style.borderRadius = '4px';
-    clearBtn.style.backgroundColor = 'var(--calendar-bg)';
-    clearBtn.style.color = 'var(--calendar-text)';
-    clearBtn.style.cursor = 'pointer';
-    clearBtn.style.flexShrink = '0';
+    clearBtn.setCssStyles({ padding: '8px 10px', border: '1px solid var(--calendar-border)', borderRadius: '4px', backgroundColor: 'var(--calendar-bg)', color: 'var(--calendar-text)', cursor: 'pointer', flexShrink: '0' });
     clearBtn.onclick = () => {
       this.input.value = '';
       this.renderList();
@@ -108,7 +95,7 @@ export class FolderPickerModal extends Modal {
     // 文件夹列表
     this.list = document.createElement('div');
     this.list.className = 'calendar-folder-list';
-    this.list.style.maxHeight = '300px';
+    this.list.setCssStyles({ maxHeight: '300px' });
     contentEl.appendChild(this.list);
 
     // 输入自动筛选
@@ -280,7 +267,7 @@ export class FolderPickerModal extends Modal {
       ? 'calendar-folder-item calendar-file-item'
       : 'calendar-folder-item';
     row.dataset.path = child.path;
-    row.style.paddingLeft = `${depth * 16 + 2}px`;
+    row.setCssStyles({ paddingLeft: `${depth * 16 + 2}px` });
 
     const arrow = document.createElement('span');
     arrow.className = 'calendar-folder-arrow';

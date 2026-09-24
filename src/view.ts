@@ -83,9 +83,11 @@ export class CalendarView extends ItemView {
     this.contentEl.empty();
 
     // 应用CSS变量
-    this.contentEl.style.setProperty('--calendar-weekend-color', this.model.weekendColor);
-    this.contentEl.style.setProperty('--calendar-font-family', this.getFontFamilyValue());
-    this.contentEl.style.setProperty('--calendar-font-size', this.model.fontSize + 'px');
+    this.contentEl.setCssProps({
+      '--calendar-weekend-color': this.model.weekendColor,
+      '--calendar-font-family': this.getFontFamilyValue(),
+      '--calendar-font-size': this.model.fontSize + 'px'
+    });
 
     // 创建日历顶部容器（头部+网格），固定不滚动
     const calendarContainer = document.createElement('div');
@@ -732,56 +734,41 @@ export class CalendarView extends ItemView {
 
     // 创建表单
     const form = document.createElement('form');
-    form.style.display = 'flex';
-    form.style.flexDirection = 'column';
-    form.style.gap = '16px';
+    form.setCssStyles({ display: 'flex', flexDirection: 'column', gap: '16px' });
 
     // 标题输入框
     const titleDiv = document.createElement('div');
-    titleDiv.style.display = 'flex';
-    titleDiv.style.flexDirection = 'column';
+    titleDiv.setCssStyles({ display: 'flex', flexDirection: 'column' });
 
     const titleLabel = document.createElement('label');
     titleLabel.textContent = '笔记标题:';
-    titleLabel.style.marginBottom = '4px';
+    titleLabel.setCssStyles({ marginBottom: '4px' });
     titleDiv.appendChild(titleLabel);
 
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.value = defaultTitle;
-    titleInput.style.padding = '8px';
-    titleInput.style.border = '1px solid var(--calendar-border)';
-    titleInput.style.borderRadius = '4px';
-    titleInput.style.backgroundColor = 'var(--calendar-bg)';
-    titleInput.style.color = 'var(--calendar-text)';
+    titleInput.setCssStyles({ padding: '8px', border: '1px solid var(--calendar-border)', borderRadius: '4px', backgroundColor: 'var(--calendar-bg)', color: 'var(--calendar-text)' });
     titleDiv.appendChild(titleInput);
     form.appendChild(titleDiv);
 
     // 文件夹路径输入框（支持筛选和选择器）
     const folderDiv = document.createElement('div');
-    folderDiv.style.display = 'flex';
-    folderDiv.style.flexDirection = 'column';
-    folderDiv.style.position = 'relative';
+    folderDiv.setCssStyles({ display: 'flex', flexDirection: 'column', position: 'relative' });
 
     const folderLabel = document.createElement('label');
     folderLabel.textContent = '文件夹路径:';
-    folderLabel.style.marginBottom = '4px';
+    folderLabel.setCssStyles({ marginBottom: '4px' });
     folderDiv.appendChild(folderLabel);
 
     const folderInputWrap = document.createElement('div');
-    folderInputWrap.style.display = 'flex';
-    folderInputWrap.style.gap = '6px';
+    folderInputWrap.setCssStyles({ display: 'flex', gap: '6px' });
 
     const folderInput = document.createElement('input');
     folderInput.type = 'text';
     folderInput.value = defaultFolder;
     folderInput.placeholder = '例如: notes/日记';
-    folderInput.style.flex = '1';
-    folderInput.style.padding = '8px';
-    folderInput.style.border = '1px solid var(--calendar-border)';
-    folderInput.style.borderRadius = '4px';
-    folderInput.style.backgroundColor = 'var(--calendar-bg)';
-    folderInput.style.color = 'var(--calendar-text)';
+    folderInput.setCssStyles({ flex: '1', padding: '8px', border: '1px solid var(--calendar-border)', borderRadius: '4px', backgroundColor: 'var(--calendar-bg)', color: 'var(--calendar-text)' });
     folderInputWrap.appendChild(folderInput);
 
     // 文件夹列表图标按钮
@@ -789,13 +776,7 @@ export class CalendarView extends ItemView {
     folderPickerBtn.type = 'button';
     folderPickerBtn.textContent = '📁';
     folderPickerBtn.title = '选择文件夹';
-    folderPickerBtn.style.padding = '8px 10px';
-    folderPickerBtn.style.border = '1px solid var(--calendar-border)';
-    folderPickerBtn.style.borderRadius = '4px';
-    folderPickerBtn.style.backgroundColor = 'var(--calendar-bg)';
-    folderPickerBtn.style.color = 'var(--calendar-text)';
-    folderPickerBtn.style.cursor = 'pointer';
-    folderPickerBtn.style.flexShrink = '0';
+    folderPickerBtn.setCssStyles({ padding: '8px 10px', border: '1px solid var(--calendar-border)', borderRadius: '4px', backgroundColor: 'var(--calendar-bg)', color: 'var(--calendar-text)', cursor: 'pointer', flexShrink: '0' });
     folderInputWrap.appendChild(folderPickerBtn);
 
     folderDiv.appendChild(folderInputWrap);
@@ -803,7 +784,7 @@ export class CalendarView extends ItemView {
     // 文件夹下拉列表
     const folderList = document.createElement('div');
     folderList.className = 'calendar-folder-list';
-    folderList.style.display = 'none';
+    folderList.setCssStyles({ display: 'none' });
     folderDiv.appendChild(folderList);
     form.appendChild(folderDiv);
 
@@ -854,12 +835,14 @@ export class CalendarView extends ItemView {
       if (show) {
         // 挂载到 body 上以 fixed 定位浮层展示，避免被弹窗裁剪产生内部滚动条
         const rect = folderInput.getBoundingClientRect();
-        folderList.style.display = 'block';
-        folderList.style.position = 'fixed';
-        folderList.style.top = `${rect.bottom + 4}px`;
-        folderList.style.left = `${rect.left}px`;
-        folderList.style.width = `${Math.max(rect.width, 260)}px`;
-        folderList.style.maxWidth = '70vw';
+        folderList.setCssStyles({
+          display: 'block',
+          position: 'fixed',
+          top: `${rect.bottom + 4}px`,
+          left: `${rect.left}px`,
+          width: `${Math.max(rect.width, 260)}px`,
+          maxWidth: '70vw'
+        });
         if (folderList.parentElement !== document.body) {
           document.body.appendChild(folderList);
         }
@@ -873,7 +856,7 @@ export class CalendarView extends ItemView {
           scrollToPath(defaultFolder);
         }
       } else {
-        folderList.style.display = 'none';
+        folderList.setCssStyles({ display: 'none' });
         if (folderList.parentElement === document.body) {
           document.body.removeChild(folderList);
         }
@@ -925,7 +908,7 @@ export class CalendarView extends ItemView {
       const row = document.createElement('div');
       row.className = 'calendar-folder-item';
       row.dataset.path = child.path;
-      row.style.paddingLeft = `${depth * 16 + 2}px`;
+      row.setCssStyles({ paddingLeft: `${depth * 16 + 2}px` });
 
       const arrow = document.createElement('span');
       arrow.className = 'calendar-folder-arrow';
@@ -1047,20 +1030,13 @@ export class CalendarView extends ItemView {
 
     // 按钮容器
     const buttonContainer = document.createElement('div');
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.justifyContent = 'flex-end';
-    buttonContainer.style.gap = '8px';
+    buttonContainer.setCssStyles({ display: 'flex', justifyContent: 'flex-end', gap: '8px' });
 
     // 取消按钮
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.textContent = '取消';
-    cancelBtn.style.padding = '8px 16px';
-    cancelBtn.style.border = '1px solid var(--calendar-border)';
-    cancelBtn.style.borderRadius = '4px';
-    cancelBtn.style.backgroundColor = 'var(--calendar-bg)';
-    cancelBtn.style.color = 'var(--calendar-text)';
-    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.setCssStyles({ padding: '8px 16px', border: '1px solid var(--calendar-border)', borderRadius: '4px', backgroundColor: 'var(--calendar-bg)', color: 'var(--calendar-text)', cursor: 'pointer' });
     cancelBtn.onclick = () => modal.close();
     buttonContainer.appendChild(cancelBtn);
 
@@ -1068,12 +1044,7 @@ export class CalendarView extends ItemView {
     const confirmBtn = document.createElement('button');
     confirmBtn.type = 'button';
     confirmBtn.textContent = '确认';
-    confirmBtn.style.padding = '8px 16px';
-    confirmBtn.style.border = '1px solid var(--calendar-primary)';
-    confirmBtn.style.borderRadius = '4px';
-    confirmBtn.style.backgroundColor = 'var(--calendar-primary)';
-    confirmBtn.style.color = '#ffffff';
-    confirmBtn.style.cursor = 'pointer';
+    confirmBtn.setCssStyles({ padding: '8px 16px', border: '1px solid var(--calendar-primary)', borderRadius: '4px', backgroundColor: 'var(--calendar-primary)', color: '#ffffff', cursor: 'pointer' });
     confirmBtn.onclick = async () => {
       const title = titleInput.value.trim();
       const folderPath = folderInput.value.trim();
@@ -1203,15 +1174,16 @@ export class CalendarView extends ItemView {
    */
   applyStyles(): void {
     if (!this.contentEl) return;
-    this.contentEl.style.setProperty('--calendar-weekend-color', this.model.weekendColor);
-    // 主题色：跟随 Obsidian 强调色时直接引用其 CSS 变量，可实时跟随外观设置中的强调色
-    this.contentEl.style.setProperty('--calendar-primary',
-      this.model.followAccentColor ? 'var(--interactive-accent)' : this.model.themeColor);
-    // hover 深色与 hover 背景基于主题色动态生成，通过 JS 内联设置（不依赖 styles.css 重载，确保生效）
-    this.contentEl.style.setProperty('--calendar-primary-hover', 'color-mix(in srgb, var(--calendar-primary) 85%, black)');
-    this.contentEl.style.setProperty('--calendar-hover', 'color-mix(in srgb, var(--calendar-primary) 10%, transparent)');
-    this.contentEl.style.setProperty('--calendar-font-family', this.getFontFamilyValue());
-    this.contentEl.style.setProperty('--calendar-font-size', this.model.fontSize + 'px');
+    this.contentEl.setCssProps({
+      '--calendar-weekend-color': this.model.weekendColor,
+      // 主题色：跟随 Obsidian 强调色时直接引用其 CSS 变量，可实时跟随外观设置中的强调色
+      '--calendar-primary': this.model.followAccentColor ? 'var(--interactive-accent)' : this.model.themeColor,
+      // hover 深色与 hover 背景基于主题色动态生成，通过 JS 内联设置（不依赖 styles.css 重载，确保生效）
+      '--calendar-primary-hover': 'color-mix(in srgb, var(--calendar-primary) 85%, black)',
+      '--calendar-hover': 'color-mix(in srgb, var(--calendar-primary) 10%, transparent)',
+      '--calendar-font-family': this.getFontFamilyValue(),
+      '--calendar-font-size': this.model.fontSize + 'px'
+    });
 
     // 根据主题模式切换 CSS class
     const themeMode = this.model.themeMode || 'auto';

@@ -834,8 +834,8 @@
   color: var(--calendar-primary);
 }
 
-/* 收起状态：隐藏分组内所有设置项 */
-.calendar-settings-section-collapsed > .setting-item {
+/* 收起状态：隐藏分组内所有设置项（标题本身也是 setting-item，需排除） */
+.calendar-settings-section-collapsed > .setting-item:not(.calendar-settings-section-title) {
   display: none;
 }
 

@@ -71,7 +71,8 @@ export class CalendarSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'Note Calendar 设置' });
+    // 使用 Setting.setHeading() 创建标题（符合 Obsidian 设置页规范，勿直接 createEl 标题元素）
+    new Setting(containerEl).setName('Note Calendar 设置').setHeading();
 
     // ========== 外观 ==========
     const appearanceSection = this.createSection('外观');
@@ -491,13 +492,13 @@ export class CalendarSettingTab extends PluginSettingTab {
     const section = document.createElement('div');
     section.className = 'calendar-settings-section';
 
-    const header = document.createElement('h3');
-    header.className = 'calendar-settings-section-title';
-    header.textContent = title;
+    // 使用 Setting.setHeading() 创建分组标题（符合 Obsidian 设置页规范），再附加收起交互
+    // settingEl 即分组标题行，挂上自定义类名复用原有收起/箭头样式
+    const header = new Setting(section).setName(title).setHeading().settingEl;
+    header.classList.add('calendar-settings-section-title');
     header.onclick = () => {
       section.classList.toggle('calendar-settings-section-collapsed');
     };
-    section.appendChild(header);
     this.containerEl.appendChild(section);
     return section;
   }
@@ -563,7 +564,7 @@ export class CalendarSettingTab extends PluginSettingTab {
     const trimmed = path.trim();
     const invalid = trimmed !== ''
       && !(this.app.vault.getAbstractFileByPath(trimmed) instanceof TFile);
-    inputEl.style.borderColor = invalid ? '#e57373' : '';
+    inputEl.setCssStyles({ borderColor: invalid ? '#e57373' : '' });
   }
 
   /**
@@ -596,39 +597,25 @@ export class CalendarSettingTab extends PluginSettingTab {
     modal.titleEl.textContent = `重置${label}`;
 
     const content = modal.contentEl;
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '16px';
+    content.setCssStyles({ display: 'flex', flexDirection: 'column', gap: '16px' });
 
     const desc = document.createElement('p');
     desc.textContent = `确定要将${label}重置为默认值吗？`;
-    desc.style.margin = '0';
+    desc.setCssStyles({ margin: '0' });
     content.appendChild(desc);
 
     const buttonContainer = document.createElement('div');
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.justifyContent = 'flex-end';
-    buttonContainer.style.gap = '8px';
+    buttonContainer.setCssStyles({ display: 'flex', justifyContent: 'flex-end', gap: '8px' });
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = '取消';
-    cancelBtn.style.padding = '8px 16px';
-    cancelBtn.style.border = '1px solid var(--background-modifier-border)';
-    cancelBtn.style.borderRadius = '4px';
-    cancelBtn.style.background = 'var(--background-secondary)';
-    cancelBtn.style.color = 'var(--text-normal)';
-    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.setCssStyles({ padding: '8px 16px', border: '1px solid var(--background-modifier-border)', borderRadius: '4px', background: 'var(--background-secondary)', color: 'var(--text-normal)', cursor: 'pointer' });
     cancelBtn.onclick = () => modal.close();
     buttonContainer.appendChild(cancelBtn);
 
     const confirmBtn = document.createElement('button');
     confirmBtn.textContent = '确认重置';
-    confirmBtn.style.padding = '8px 16px';
-    confirmBtn.style.border = 'none';
-    confirmBtn.style.borderRadius = '4px';
-    confirmBtn.style.background = 'var(--calendar-primary)';
-    confirmBtn.style.color = '#ffffff';
-    confirmBtn.style.cursor = 'pointer';
+    confirmBtn.setCssStyles({ padding: '8px 16px', border: 'none', borderRadius: '4px', background: 'var(--calendar-primary)', color: '#ffffff', cursor: 'pointer' });
     confirmBtn.onclick = async () => {
       await this.plugin.updateSettings({ [key]: defaultValue } as Partial<NoteCalendarSettings>);
       this.display();
@@ -649,39 +636,25 @@ export class CalendarSettingTab extends PluginSettingTab {
     modal.titleEl.textContent = '恢复默认设置';
 
     const content = modal.contentEl;
-    content.style.display = 'flex';
-    content.style.flexDirection = 'column';
-    content.style.gap = '16px';
+    content.setCssStyles({ display: 'flex', flexDirection: 'column', gap: '16px' });
 
     const desc = document.createElement('p');
     desc.textContent = '确定要将所有设置恢复为默认值吗？此操作将覆盖当前全部配置。';
-    desc.style.margin = '0';
+    desc.setCssStyles({ margin: '0' });
     content.appendChild(desc);
 
     const buttonContainer = document.createElement('div');
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.justifyContent = 'flex-end';
-    buttonContainer.style.gap = '8px';
+    buttonContainer.setCssStyles({ display: 'flex', justifyContent: 'flex-end', gap: '8px' });
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = '取消';
-    cancelBtn.style.padding = '8px 16px';
-    cancelBtn.style.border = '1px solid var(--background-modifier-border)';
-    cancelBtn.style.borderRadius = '4px';
-    cancelBtn.style.background = 'var(--background-secondary)';
-    cancelBtn.style.color = 'var(--text-normal)';
-    cancelBtn.style.cursor = 'pointer';
+    cancelBtn.setCssStyles({ padding: '8px 16px', border: '1px solid var(--background-modifier-border)', borderRadius: '4px', background: 'var(--background-secondary)', color: 'var(--text-normal)', cursor: 'pointer' });
     cancelBtn.onclick = () => modal.close();
     buttonContainer.appendChild(cancelBtn);
 
     const confirmBtn = document.createElement('button');
     confirmBtn.textContent = '确认恢复';
-    confirmBtn.style.padding = '8px 16px';
-    confirmBtn.style.border = 'none';
-    confirmBtn.style.borderRadius = '4px';
-    confirmBtn.style.background = 'var(--calendar-primary)';
-    confirmBtn.style.color = '#ffffff';
-    confirmBtn.style.cursor = 'pointer';
+    confirmBtn.setCssStyles({ padding: '8px 16px', border: 'none', borderRadius: '4px', background: 'var(--calendar-primary)', color: '#ffffff', cursor: 'pointer' });
     confirmBtn.onclick = async () => {
       await this.plugin.updateSettings({ ...DEFAULT_SETTINGS });
       this.display();

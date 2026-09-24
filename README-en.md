@@ -26,6 +26,10 @@ The following features are planned for future iterations (in no particular order
 
 ## Changelog
 
+### v1.4.1 — Note Cache Architecture Optimization (2026-09-24)
+- Note cache is now shared at the plugin level: multiple calendar views share the same data, no redundant rescans on view switching/recreation
+- Note creation, modification, rename, and deletion update the cache in real time even when the calendar view is closed
+
 ### v1.4.0 — Templater Integration & UX Improvements (2026-09-14)
 - Optional Templater template support for all five note types (no impact if not installed)
 - Folder/template file pickers in settings, with invalid-path highlighting

@@ -12028,34 +12028,21 @@ var FolderPickerModal = class extends import_obsidian.Modal {
   onOpen() {
     const { titleEl, contentEl } = this;
     titleEl.textContent = this.options.title;
-    this.modalEl.style.width = "480px";
+    this.modalEl.setCssStyles({ width: "480px" });
     contentEl.empty();
     const inputWrap = document.createElement("div");
-    inputWrap.style.display = "flex";
-    inputWrap.style.gap = "6px";
-    inputWrap.style.marginBottom = "8px";
+    inputWrap.setCssStyles({ display: "flex", gap: "6px", marginBottom: "8px" });
     this.input = document.createElement("input");
     this.input.type = "text";
     this.input.value = this.options.initialPath || "";
     this.input.placeholder = this.isFileMode() ? "\u8F93\u5165\u7B5B\u9009\u6A21\u677F\u6587\u4EF6\uFF0C\u6216\u70B9\u51FB\u4E0B\u65B9\u6587\u4EF6\u9009\u62E9" : "\u8F93\u5165\u7B5B\u9009\u6587\u4EF6\u5939\uFF0C\u6216\u76F4\u63A5\u70B9\u51FB\u4E0B\u65B9\u6587\u4EF6\u5939\u9009\u62E9";
-    this.input.style.flex = "1";
-    this.input.style.padding = "8px";
-    this.input.style.border = "1px solid var(--calendar-border)";
-    this.input.style.borderRadius = "4px";
-    this.input.style.backgroundColor = "var(--calendar-bg)";
-    this.input.style.color = "var(--calendar-text)";
+    this.input.setCssStyles({ flex: "1", padding: "8px", border: "1px solid var(--calendar-border)", borderRadius: "4px", backgroundColor: "var(--calendar-bg)", color: "var(--calendar-text)" });
     inputWrap.appendChild(this.input);
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.textContent = "\u2715";
     clearBtn.title = "\u6E05\u7A7A\u8F93\u5165";
-    clearBtn.style.padding = "8px 10px";
-    clearBtn.style.border = "1px solid var(--calendar-border)";
-    clearBtn.style.borderRadius = "4px";
-    clearBtn.style.backgroundColor = "var(--calendar-bg)";
-    clearBtn.style.color = "var(--calendar-text)";
-    clearBtn.style.cursor = "pointer";
-    clearBtn.style.flexShrink = "0";
+    clearBtn.setCssStyles({ padding: "8px 10px", border: "1px solid var(--calendar-border)", borderRadius: "4px", backgroundColor: "var(--calendar-bg)", color: "var(--calendar-text)", cursor: "pointer", flexShrink: "0" });
     clearBtn.onclick = () => {
       this.input.value = "";
       this.renderList();
@@ -12065,7 +12052,7 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     contentEl.appendChild(inputWrap);
     this.list = document.createElement("div");
     this.list.className = "calendar-folder-list";
-    this.list.style.maxHeight = "300px";
+    this.list.setCssStyles({ maxHeight: "300px" });
     contentEl.appendChild(this.list);
     this.input.addEventListener("input", () => this.renderList());
     this.input.addEventListener("keydown", (e) => {
@@ -12212,7 +12199,7 @@ var FolderPickerModal = class extends import_obsidian.Modal {
     const row = document.createElement("div");
     row.className = child.isFile ? "calendar-folder-item calendar-file-item" : "calendar-folder-item";
     row.dataset.path = child.path;
-    row.style.paddingLeft = `${depth * 16 + 2}px`;
+    row.setCssStyles({ paddingLeft: `${depth * 16 + 2}px` });
     const arrow = document.createElement("span");
     arrow.className = "calendar-folder-arrow";
     if (child.isFile) {
@@ -12462,7 +12449,7 @@ var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Note Calendar \u8BBE\u7F6E" });
+    new import_obsidian3.Setting(containerEl).setName("Note Calendar \u8BBE\u7F6E").setHeading();
     const appearanceSection = this.createSection("\u5916\u89C2");
     new import_obsidian3.Setting(appearanceSection).setName("\u4E3B\u9898\u6A21\u5F0F").setDesc("\u9009\u62E9\u65E5\u5386\u80CC\u666F\u4E3B\u9898\u6A21\u5F0F\u3002\u8DDF\u968FObsidian\u5C06\u81EA\u52A8\u9002\u914D\u6DF1\u8272/\u6D45\u8272\u4E3B\u9898").addDropdown((dropdown) => dropdown.addOption("auto", "\u8DDF\u968FObsidian").addOption("dark", "\u6DF1\u8272").addOption("light", "\u6D45\u8272").setValue(this.plugin.settings.themeMode || "auto").onChange(async (value) => {
       await this.plugin.updateSettings({ themeMode: value });
@@ -12629,13 +12616,11 @@ var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
   createSection(title) {
     const section = document.createElement("div");
     section.className = "calendar-settings-section";
-    const header = document.createElement("h3");
-    header.className = "calendar-settings-section-title";
-    header.textContent = title;
+    const header = new import_obsidian3.Setting(section).setName(title).setHeading().settingEl;
+    header.classList.add("calendar-settings-section-title");
     header.onclick = () => {
       section.classList.toggle("calendar-settings-section-collapsed");
     };
-    section.appendChild(header);
     this.containerEl.appendChild(section);
     return section;
   }
@@ -12684,7 +12669,7 @@ var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
   updateTemplateInputState(inputEl, path) {
     const trimmed = path.trim();
     const invalid = trimmed !== "" && !(this.app.vault.getAbstractFileByPath(trimmed) instanceof import_obsidian3.TFile);
-    inputEl.style.borderColor = invalid ? "#e57373" : "";
+    inputEl.setCssStyles({ borderColor: invalid ? "#e57373" : "" });
   }
   /**
    * 打开模板文件选择弹窗（file 模式，树中可选 .md 文件），选择后自动填充并保存
@@ -12714,35 +12699,21 @@ var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
     const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.textContent = `\u91CD\u7F6E${label}`;
     const content = modal.contentEl;
-    content.style.display = "flex";
-    content.style.flexDirection = "column";
-    content.style.gap = "16px";
+    content.setCssStyles({ display: "flex", flexDirection: "column", gap: "16px" });
     const desc = document.createElement("p");
     desc.textContent = `\u786E\u5B9A\u8981\u5C06${label}\u91CD\u7F6E\u4E3A\u9ED8\u8BA4\u503C\u5417\uFF1F`;
-    desc.style.margin = "0";
+    desc.setCssStyles({ margin: "0" });
     content.appendChild(desc);
     const buttonContainer = document.createElement("div");
-    buttonContainer.style.display = "flex";
-    buttonContainer.style.justifyContent = "flex-end";
-    buttonContainer.style.gap = "8px";
+    buttonContainer.setCssStyles({ display: "flex", justifyContent: "flex-end", gap: "8px" });
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = "\u53D6\u6D88";
-    cancelBtn.style.padding = "8px 16px";
-    cancelBtn.style.border = "1px solid var(--background-modifier-border)";
-    cancelBtn.style.borderRadius = "4px";
-    cancelBtn.style.background = "var(--background-secondary)";
-    cancelBtn.style.color = "var(--text-normal)";
-    cancelBtn.style.cursor = "pointer";
+    cancelBtn.setCssStyles({ padding: "8px 16px", border: "1px solid var(--background-modifier-border)", borderRadius: "4px", background: "var(--background-secondary)", color: "var(--text-normal)", cursor: "pointer" });
     cancelBtn.onclick = () => modal.close();
     buttonContainer.appendChild(cancelBtn);
     const confirmBtn = document.createElement("button");
     confirmBtn.textContent = "\u786E\u8BA4\u91CD\u7F6E";
-    confirmBtn.style.padding = "8px 16px";
-    confirmBtn.style.border = "none";
-    confirmBtn.style.borderRadius = "4px";
-    confirmBtn.style.background = "var(--calendar-primary)";
-    confirmBtn.style.color = "#ffffff";
-    confirmBtn.style.cursor = "pointer";
+    confirmBtn.setCssStyles({ padding: "8px 16px", border: "none", borderRadius: "4px", background: "var(--calendar-primary)", color: "#ffffff", cursor: "pointer" });
     confirmBtn.onclick = async () => {
       await this.plugin.updateSettings({ [key]: defaultValue });
       this.display();
@@ -12760,35 +12731,21 @@ var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
     const modal = new import_obsidian3.Modal(this.app);
     modal.titleEl.textContent = "\u6062\u590D\u9ED8\u8BA4\u8BBE\u7F6E";
     const content = modal.contentEl;
-    content.style.display = "flex";
-    content.style.flexDirection = "column";
-    content.style.gap = "16px";
+    content.setCssStyles({ display: "flex", flexDirection: "column", gap: "16px" });
     const desc = document.createElement("p");
     desc.textContent = "\u786E\u5B9A\u8981\u5C06\u6240\u6709\u8BBE\u7F6E\u6062\u590D\u4E3A\u9ED8\u8BA4\u503C\u5417\uFF1F\u6B64\u64CD\u4F5C\u5C06\u8986\u76D6\u5F53\u524D\u5168\u90E8\u914D\u7F6E\u3002";
-    desc.style.margin = "0";
+    desc.setCssStyles({ margin: "0" });
     content.appendChild(desc);
     const buttonContainer = document.createElement("div");
-    buttonContainer.style.display = "flex";
-    buttonContainer.style.justifyContent = "flex-end";
-    buttonContainer.style.gap = "8px";
+    buttonContainer.setCssStyles({ display: "flex", justifyContent: "flex-end", gap: "8px" });
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = "\u53D6\u6D88";
-    cancelBtn.style.padding = "8px 16px";
-    cancelBtn.style.border = "1px solid var(--background-modifier-border)";
-    cancelBtn.style.borderRadius = "4px";
-    cancelBtn.style.background = "var(--background-secondary)";
-    cancelBtn.style.color = "var(--text-normal)";
-    cancelBtn.style.cursor = "pointer";
+    cancelBtn.setCssStyles({ padding: "8px 16px", border: "1px solid var(--background-modifier-border)", borderRadius: "4px", background: "var(--background-secondary)", color: "var(--text-normal)", cursor: "pointer" });
     cancelBtn.onclick = () => modal.close();
     buttonContainer.appendChild(cancelBtn);
     const confirmBtn = document.createElement("button");
     confirmBtn.textContent = "\u786E\u8BA4\u6062\u590D";
-    confirmBtn.style.padding = "8px 16px";
-    confirmBtn.style.border = "none";
-    confirmBtn.style.borderRadius = "4px";
-    confirmBtn.style.background = "var(--calendar-primary)";
-    confirmBtn.style.color = "#ffffff";
-    confirmBtn.style.cursor = "pointer";
+    confirmBtn.setCssStyles({ padding: "8px 16px", border: "none", borderRadius: "4px", background: "var(--calendar-primary)", color: "#ffffff", cursor: "pointer" });
     confirmBtn.onclick = async () => {
       await this.plugin.updateSettings({ ...DEFAULT_SETTINGS });
       this.display();
@@ -12849,9 +12806,11 @@ var CalendarView = class extends import_obsidian4.ItemView {
    */
   createCalendarView() {
     this.contentEl.empty();
-    this.contentEl.style.setProperty("--calendar-weekend-color", this.model.weekendColor);
-    this.contentEl.style.setProperty("--calendar-font-family", this.getFontFamilyValue());
-    this.contentEl.style.setProperty("--calendar-font-size", this.model.fontSize + "px");
+    this.contentEl.setCssProps({
+      "--calendar-weekend-color": this.model.weekendColor,
+      "--calendar-font-family": this.getFontFamilyValue(),
+      "--calendar-font-size": this.model.fontSize + "px"
+    });
     const calendarContainer = document.createElement("div");
     calendarContainer.className = "calendar-calendar-container";
     const header = this.createHeader();
@@ -13328,64 +13287,43 @@ var CalendarView = class extends import_obsidian4.ItemView {
     const modal = new import_obsidian4.Modal(this.app);
     modal.titleEl.textContent = type === "daily" ? "\u521B\u5EFA\u65B0\u7B14\u8BB0" : type === "weekly" ? "\u521B\u5EFA\u5468\u5468\u8BB0" : type === "monthly" ? "\u521B\u5EFA\u6708\u5EA6\u7B14\u8BB0" : type === "quarterly" ? "\u521B\u5EFA\u5B63\u5EA6\u7B14\u8BB0" : "\u521B\u5EFA\u5E74\u5EA6\u7B14\u8BB0";
     const form = document.createElement("form");
-    form.style.display = "flex";
-    form.style.flexDirection = "column";
-    form.style.gap = "16px";
+    form.setCssStyles({ display: "flex", flexDirection: "column", gap: "16px" });
     const titleDiv = document.createElement("div");
-    titleDiv.style.display = "flex";
-    titleDiv.style.flexDirection = "column";
+    titleDiv.setCssStyles({ display: "flex", flexDirection: "column" });
     const titleLabel = document.createElement("label");
     titleLabel.textContent = "\u7B14\u8BB0\u6807\u9898:";
-    titleLabel.style.marginBottom = "4px";
+    titleLabel.setCssStyles({ marginBottom: "4px" });
     titleDiv.appendChild(titleLabel);
     const titleInput = document.createElement("input");
     titleInput.type = "text";
     titleInput.value = defaultTitle;
-    titleInput.style.padding = "8px";
-    titleInput.style.border = "1px solid var(--calendar-border)";
-    titleInput.style.borderRadius = "4px";
-    titleInput.style.backgroundColor = "var(--calendar-bg)";
-    titleInput.style.color = "var(--calendar-text)";
+    titleInput.setCssStyles({ padding: "8px", border: "1px solid var(--calendar-border)", borderRadius: "4px", backgroundColor: "var(--calendar-bg)", color: "var(--calendar-text)" });
     titleDiv.appendChild(titleInput);
     form.appendChild(titleDiv);
     const folderDiv = document.createElement("div");
-    folderDiv.style.display = "flex";
-    folderDiv.style.flexDirection = "column";
-    folderDiv.style.position = "relative";
+    folderDiv.setCssStyles({ display: "flex", flexDirection: "column", position: "relative" });
     const folderLabel = document.createElement("label");
     folderLabel.textContent = "\u6587\u4EF6\u5939\u8DEF\u5F84:";
-    folderLabel.style.marginBottom = "4px";
+    folderLabel.setCssStyles({ marginBottom: "4px" });
     folderDiv.appendChild(folderLabel);
     const folderInputWrap = document.createElement("div");
-    folderInputWrap.style.display = "flex";
-    folderInputWrap.style.gap = "6px";
+    folderInputWrap.setCssStyles({ display: "flex", gap: "6px" });
     const folderInput = document.createElement("input");
     folderInput.type = "text";
     folderInput.value = defaultFolder;
     folderInput.placeholder = "\u4F8B\u5982: notes/\u65E5\u8BB0";
-    folderInput.style.flex = "1";
-    folderInput.style.padding = "8px";
-    folderInput.style.border = "1px solid var(--calendar-border)";
-    folderInput.style.borderRadius = "4px";
-    folderInput.style.backgroundColor = "var(--calendar-bg)";
-    folderInput.style.color = "var(--calendar-text)";
+    folderInput.setCssStyles({ flex: "1", padding: "8px", border: "1px solid var(--calendar-border)", borderRadius: "4px", backgroundColor: "var(--calendar-bg)", color: "var(--calendar-text)" });
     folderInputWrap.appendChild(folderInput);
     const folderPickerBtn = document.createElement("button");
     folderPickerBtn.type = "button";
     folderPickerBtn.textContent = "\u{1F4C1}";
     folderPickerBtn.title = "\u9009\u62E9\u6587\u4EF6\u5939";
-    folderPickerBtn.style.padding = "8px 10px";
-    folderPickerBtn.style.border = "1px solid var(--calendar-border)";
-    folderPickerBtn.style.borderRadius = "4px";
-    folderPickerBtn.style.backgroundColor = "var(--calendar-bg)";
-    folderPickerBtn.style.color = "var(--calendar-text)";
-    folderPickerBtn.style.cursor = "pointer";
-    folderPickerBtn.style.flexShrink = "0";
+    folderPickerBtn.setCssStyles({ padding: "8px 10px", border: "1px solid var(--calendar-border)", borderRadius: "4px", backgroundColor: "var(--calendar-bg)", color: "var(--calendar-text)", cursor: "pointer", flexShrink: "0" });
     folderInputWrap.appendChild(folderPickerBtn);
     folderDiv.appendChild(folderInputWrap);
     const folderList = document.createElement("div");
     folderList.className = "calendar-folder-list";
-    folderList.style.display = "none";
+    folderList.setCssStyles({ display: "none" });
     folderDiv.appendChild(folderList);
     form.appendChild(folderDiv);
     const expandedPaths = /* @__PURE__ */ new Set();
@@ -13423,12 +13361,14 @@ var CalendarView = class extends import_obsidian4.ItemView {
       activeIndex = -1;
       if (show) {
         const rect = folderInput.getBoundingClientRect();
-        folderList.style.display = "block";
-        folderList.style.position = "fixed";
-        folderList.style.top = `${rect.bottom + 4}px`;
-        folderList.style.left = `${rect.left}px`;
-        folderList.style.width = `${Math.max(rect.width, 260)}px`;
-        folderList.style.maxWidth = "70vw";
+        folderList.setCssStyles({
+          display: "block",
+          position: "fixed",
+          top: `${rect.bottom + 4}px`,
+          left: `${rect.left}px`,
+          width: `${Math.max(rect.width, 260)}px`,
+          maxWidth: "70vw"
+        });
         if (folderList.parentElement !== document.body) {
           document.body.appendChild(folderList);
         }
@@ -13441,7 +13381,7 @@ var CalendarView = class extends import_obsidian4.ItemView {
           scrollToPath(defaultFolder);
         }
       } else {
-        folderList.style.display = "none";
+        folderList.setCssStyles({ display: "none" });
         if (folderList.parentElement === document.body) {
           document.body.removeChild(folderList);
         }
@@ -13490,7 +13430,7 @@ var CalendarView = class extends import_obsidian4.ItemView {
       const row = document.createElement("div");
       row.className = "calendar-folder-item";
       row.dataset.path = child.path;
-      row.style.paddingLeft = `${depth * 16 + 2}px`;
+      row.setCssStyles({ paddingLeft: `${depth * 16 + 2}px` });
       const arrow = document.createElement("span");
       arrow.className = "calendar-folder-arrow";
       if (child.children.size > 0) {
@@ -13594,29 +13534,17 @@ var CalendarView = class extends import_obsidian4.ItemView {
       }
     };
     const buttonContainer = document.createElement("div");
-    buttonContainer.style.display = "flex";
-    buttonContainer.style.justifyContent = "flex-end";
-    buttonContainer.style.gap = "8px";
+    buttonContainer.setCssStyles({ display: "flex", justifyContent: "flex-end", gap: "8px" });
     const cancelBtn = document.createElement("button");
     cancelBtn.type = "button";
     cancelBtn.textContent = "\u53D6\u6D88";
-    cancelBtn.style.padding = "8px 16px";
-    cancelBtn.style.border = "1px solid var(--calendar-border)";
-    cancelBtn.style.borderRadius = "4px";
-    cancelBtn.style.backgroundColor = "var(--calendar-bg)";
-    cancelBtn.style.color = "var(--calendar-text)";
-    cancelBtn.style.cursor = "pointer";
+    cancelBtn.setCssStyles({ padding: "8px 16px", border: "1px solid var(--calendar-border)", borderRadius: "4px", backgroundColor: "var(--calendar-bg)", color: "var(--calendar-text)", cursor: "pointer" });
     cancelBtn.onclick = () => modal.close();
     buttonContainer.appendChild(cancelBtn);
     const confirmBtn = document.createElement("button");
     confirmBtn.type = "button";
     confirmBtn.textContent = "\u786E\u8BA4";
-    confirmBtn.style.padding = "8px 16px";
-    confirmBtn.style.border = "1px solid var(--calendar-primary)";
-    confirmBtn.style.borderRadius = "4px";
-    confirmBtn.style.backgroundColor = "var(--calendar-primary)";
-    confirmBtn.style.color = "#ffffff";
-    confirmBtn.style.cursor = "pointer";
+    confirmBtn.setCssStyles({ padding: "8px 16px", border: "1px solid var(--calendar-primary)", borderRadius: "4px", backgroundColor: "var(--calendar-primary)", color: "#ffffff", cursor: "pointer" });
     confirmBtn.onclick = async () => {
       const title = titleInput.value.trim();
       const folderPath = folderInput.value.trim();
@@ -13719,15 +13647,16 @@ var CalendarView = class extends import_obsidian4.ItemView {
    */
   applyStyles() {
     if (!this.contentEl) return;
-    this.contentEl.style.setProperty("--calendar-weekend-color", this.model.weekendColor);
-    this.contentEl.style.setProperty(
-      "--calendar-primary",
-      this.model.followAccentColor ? "var(--interactive-accent)" : this.model.themeColor
-    );
-    this.contentEl.style.setProperty("--calendar-primary-hover", "color-mix(in srgb, var(--calendar-primary) 85%, black)");
-    this.contentEl.style.setProperty("--calendar-hover", "color-mix(in srgb, var(--calendar-primary) 10%, transparent)");
-    this.contentEl.style.setProperty("--calendar-font-family", this.getFontFamilyValue());
-    this.contentEl.style.setProperty("--calendar-font-size", this.model.fontSize + "px");
+    this.contentEl.setCssProps({
+      "--calendar-weekend-color": this.model.weekendColor,
+      // 主题色：跟随 Obsidian 强调色时直接引用其 CSS 变量，可实时跟随外观设置中的强调色
+      "--calendar-primary": this.model.followAccentColor ? "var(--interactive-accent)" : this.model.themeColor,
+      // hover 深色与 hover 背景基于主题色动态生成，通过 JS 内联设置（不依赖 styles.css 重载，确保生效）
+      "--calendar-primary-hover": "color-mix(in srgb, var(--calendar-primary) 85%, black)",
+      "--calendar-hover": "color-mix(in srgb, var(--calendar-primary) 10%, transparent)",
+      "--calendar-font-family": this.getFontFamilyValue(),
+      "--calendar-font-size": this.model.fontSize + "px"
+    });
     const themeMode = this.model.themeMode || "auto";
     this.contentEl.classList.remove("calendar-theme-dark", "calendar-theme-light");
     if (themeMode === "dark") {
