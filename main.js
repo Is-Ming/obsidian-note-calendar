@@ -12449,7 +12449,6 @@ var CalendarSettingTab = class extends import_obsidian3.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian3.Setting(containerEl).setName("Note Calendar \u8BBE\u7F6E").setHeading();
     const appearanceSection = this.createSection("\u5916\u89C2");
     new import_obsidian3.Setting(appearanceSection).setName("\u4E3B\u9898\u6A21\u5F0F").setDesc("\u9009\u62E9\u65E5\u5386\u80CC\u666F\u4E3B\u9898\u6A21\u5F0F\u3002\u8DDF\u968FObsidian\u5C06\u81EA\u52A8\u9002\u914D\u6DF1\u8272/\u6D45\u8272\u4E3B\u9898").addDropdown((dropdown) => dropdown.addOption("auto", "\u8DDF\u968FObsidian").addOption("dark", "\u6DF1\u8272").addOption("light", "\u6D45\u8272").setValue(this.plugin.settings.themeMode || "auto").onChange(async (value) => {
       await this.plugin.updateSettings({ themeMode: value });

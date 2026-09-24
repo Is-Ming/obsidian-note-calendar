@@ -71,8 +71,8 @@ export class CalendarSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    // 使用 Setting.setHeading() 创建标题（符合 Obsidian 设置页规范，勿直接 createEl 标题元素）
-    new Setting(containerEl).setName('Note Calendar 设置').setHeading();
+    // 注意：不要在设置页顶部创建插件名标题，Obsidian 已在标签页头部显示插件名
+    // （Obsidian 审核规范：Avoid including the plugin name in settings headings）
 
     // ========== 外观 ==========
     const appearanceSection = this.createSection('外观');
