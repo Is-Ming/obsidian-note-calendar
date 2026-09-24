@@ -26,6 +26,10 @@ The following features are planned for future iterations (in no particular order
 
 ## Changelog
 
+### v1.4.2 — Bug Fixes (2026-09-24)
+- Removed the plugin-name heading at the top of the settings page (Obsidian already displays the plugin name)
+- Settings headings and inline styles now follow Obsidian's official DOM API guidelines
+
 ### v1.4.1 — Note Cache Architecture Optimization (2026-09-24)
 - Note cache is now shared at the plugin level: multiple calendar views share the same data, no redundant rescans on view switching/recreation
 - Note creation, modification, rename, and deletion update the cache in real time even when the calendar view is closed
