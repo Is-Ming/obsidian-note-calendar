@@ -1,6 +1,6 @@
 {
   "name": "note-calendar",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "An Obsidian calendar plugin that displays lunar dates, holidays, workday adjustments, solar terms, and allows updating/creating notes associated with calendar entries.",
   "main": "main.js",
   "scripts": {
